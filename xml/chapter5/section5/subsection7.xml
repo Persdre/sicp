@@ -69,15 +69,22 @@ compile_and_go(
                  ? 1
                  : n * factorial(n - 1);
          }"));
-
-;;; EC-Eval value:
-ok
-
-;;; EC-Eval input:
-(factorial 5)
-;;; EC-Eval value:
-120
       </JAVASCRIPT>
+      <JAVASCRIPT_OUTPUT>
+EC-evaluate value:
+undefined
+
+EC-evaluate input:
+      </JAVASCRIPT_OUTPUT>
+    </SNIPPET>
+    <SNIPPET EVAL="no">
+      <JAVASCRIPT>
+factorial(5);
+      </JAVASCRIPT>
+      <JAVASCRIPT_OUTPUT>
+EC-evaluate value:
+120
+      </JAVASCRIPT_OUTPUT>
     </SNIPPET>
   </TEXT>
 
@@ -145,7 +152,7 @@ ok
     branch(label("primitive_apply")),
     test(op("compound_function"), reg("fun")),
     branch(label("compound_apply")),
-    test(op("compiled_function"), reg("fun")),
+    test(op("is_compiled_function"), reg("fun")),
     branch(label("compiled_apply")),
     go_to(label("unknown_function_type")),
 "compiled_apply",
@@ -157,7 +164,7 @@ ok
   </TEXT>
 
   <TEXT>
-    Note the restore of <LATEXINLINE>$\texttt{continue}$</LATEXINLINE> at
+    Note the restore of <SCHEMEINLINE>continue</SCHEMEINLINE> at
     <SPLITINLINE>
       <SCHEME>
       <SCHEMEINLINE>compiled-apply</SCHEMEINLINE>.</SCHEME>
@@ -173,8 +180,8 @@ ok
     </SPLITINLINE>
     the continuation would be at the top of the stack.  The compiled code entry
     point, on the other hand, expects the continuation to be in
-    <LATEXINLINE>$\texttt{continue}$</LATEXINLINE>, so
-    <LATEXINLINE>$\texttt{continue}$</LATEXINLINE> must be
+    <SCHEMEINLINE>continue</SCHEMEINLINE>, so
+    <SCHEMEINLINE>continue</SCHEMEINLINE> must be
     restored before the compiled code is executed.
   </TEXT>
 
@@ -199,7 +206,6 @@ ok
       </SCHEME>
       <JAVASCRIPT>
 function start_eceval() {
-    the_global_environment = setup_environment();
     set_register_contents(eceval, "flag", false);
     return start(eceval);
 }
@@ -243,7 +249,7 @@ $\langle\ldots\rangle$
     </SPLITINLINE>
     Starting at this entry point jumps to the location designated
     by <SCHEMEINLINE>val</SCHEMEINLINE>, but first assigns
-    <LATEXINLINE>$\texttt{continue}$</LATEXINLINE> so that execution will return to
+    <SCHEMEINLINE>continue</SCHEMEINLINE> so that execution will return to
     <SPLITINLINE>
       <SCHEME><SCHEMEINLINE>print-result</SCHEMEINLINE>,</SCHEME>
       <JAVASCRIPT><JAVASCRIPTINLINE>print_result</JAVASCRIPTINLINE>,
@@ -284,24 +290,26 @@ $\langle\ldots\rangle$
               (else (display object))))
       </SCHEME>
       <JAVASCRIPT>
-function user_print(object) {
-    if (is_compound_function(object)) {
-        display(list(
-            "compound_function",
-            function_parameters(object),
-            function_body(object),
-            "&lt;compiler-env&gt;"));
-    } else if (is_compiled_function(object)) {
-        display("&lt;compiled-function&gt;");
-    } else {
-        display(object);
+function user_print(prompt_string, object) {
+    function to_string(object) {
+        return is_compound_function(object)
+            ? "&lt;compound-function&gt;"
+            : is_primitive_function(object)
+            ? "&lt;primitive-function&gt;"
+            : is_compiled_function(object)
+            ?  "&lt;compiled-function&gt;"
+            : is_pair(object)
+            ? "[" + to_string(head(object)) + ", "
+                  + to_string(tail(object)) + "]" 
+            : stringify(object);
     }
+    display(prompt_string + to_string(object));
 }
       </JAVASCRIPT>
     </SNIPPET></FOOTNOTE>
+    <!--  \indcode*{external-entry} -->
     <SNIPPET>
       <SCHEME>
-      <!--  \indcode*{external-entry} -->
       external-entry
       (perform (op initialize-stack))
       (assign env (op get-global-environment))
@@ -309,10 +317,9 @@ function user_print(object) {
       (goto (reg val))
       </SCHEME>
       <JAVASCRIPT>
-<!--  \indcode*{external-entry} -->
 "external_entry",
   perform(op("initialize_stack")),
-  assign("env", op("get_global_environment")),
+  assign("env", list(op("get_global_environment"))),
   assign("continue", label("print_result")),
   go_to(reg("val")),
       </JAVASCRIPT>
@@ -329,19 +336,35 @@ function user_print(object) {
     </SPLITINLINE>
     to compile a
     <SPLITINLINE>
-      <SCHEME>procedure</SCHEME>
-      <JAVASCRIPT>function</JAVASCRIPT>
+      <SCHEME>procedure definition,</SCHEME>
+      <JAVASCRIPT>function declaration,</JAVASCRIPT>
     </SPLITINLINE>
-    definition, execute the compiled code, and run the read-eval-print loop so
+    execute the compiled code, and run the read-eval-print loop so
     we can try the
     <SPLITINLINE>
       <SCHEME>procedure.</SCHEME>
       <JAVASCRIPT>function.</JAVASCRIPT>
     </SPLITINLINE>
+    <SPLIT>
+      <JAVASCRIPT>
+	For the interpreted program to refer to the names that
+	are declared at toplevel in the compiled program, we
+	scan out the toplevel names and 
+	extend the global environment by binding these names to
+	<JAVASCRIPTINLINE>"*unassigned*"</JAVASCRIPTINLINE>,
+	knowing that the compiled code will assign them to
+	the correct values.
+      </JAVASCRIPT>
+    </SPLIT>
     Because we want the compiled code to return to the location in
-    <LATEXINLINE>$\texttt{continue}$</LATEXINLINE> with its result in
-    <SCHEMEINLINE>val</SCHEMEINLINE>, we compile the expression with a
-    target of <SCHEMEINLINE>val</SCHEMEINLINE> and a linkage of
+    <SCHEMEINLINE>continue</SCHEMEINLINE> with its result in
+    <SCHEMEINLINE>val</SCHEMEINLINE>, we compile the
+    <SPLITINLINE>
+      <SCHEME>expression</SCHEME>
+      <JAVASCRIPT>statement</JAVASCRIPT>
+    </SPLITINLINE>
+    with a target of <SCHEMEINLINE>val</SCHEMEINLINE> and a
+    linkage of
     <SPLITINLINE>
       <SCHEME>
 	<SCHEMEINLINE>return</SCHEMEINLINE>.
@@ -351,8 +374,8 @@ function user_print(object) {
       </JAVASCRIPT>
     </SPLITINLINE>
     In order to transform the
-    object code produced by the compiler into executable instructions for the
-    evaluator register machine, we use the
+    object code produced by the compiler into executable instructions
+    for the evaluator register machine, we use the
     <SPLITINLINE>
       <SCHEME>procedure</SCHEME>
       <JAVASCRIPT>function</JAVASCRIPT>
@@ -360,8 +383,8 @@ function user_print(object) {
     <SCHEMEINLINE>assemble</SCHEMEINLINE> from the
     register-machine simulator
     (section<SPACE/><REF NAME="sec:assembler"/>).  We then initialize
-    the <SCHEMEINLINE>val</SCHEMEINLINE> register to point to the list of
-    instructions, set the
+    the <SCHEMEINLINE>val</SCHEMEINLINE> register to point to the list
+    of instructions, set the
     <SCHEMEINLINE>flag</SCHEMEINLINE> so that the evaluator will go to
     <SPLITINLINE>
       <SCHEME><SCHEMEINLINE>external-entry</SCHEMEINLINE>,</SCHEME>
@@ -370,8 +393,35 @@ function user_print(object) {
     </SPLITINLINE>
     and start the evaluator.
     <!--  \indcode*{compile-and-go} -->
+    <SNIPPET HIDE="yes">
+      <NAME>display_instructions</NAME>
+      <JAVASCRIPT>
+function stringify_list(xs) {
+    return is_null(member(head(xs),
+                   list("assign", "perform", "op", "label", "branch",
+                        "go_to", "save", "restore", "reg", "constant")))
+           ? "list(" + comma_separated(xs) + ")"
+           : head(xs) + "(" + comma_separated(tail(xs)) + ")";
+}
+function comma_separated(elements) {
+    return accumulate((s, acc) => stringify_instruction(s) +
+                                  (acc === "" ? "" : ", " + acc),
+                      "", elements);
+}
+function stringify_instruction(x) {
+    return is_string(x) || is_number(x) || is_undefined(x) || is_null(x)
+           ? stringify(x)
+           : stringify_list(x);
+}	   
+function display_instructions(instructions) {
+    return for_each(i => {display("", stringify_instruction(i) + ","); },
+                    instructions);
+}	
+      </JAVASCRIPT>
+    </SNIPPET>
     <SNIPPET EVAL="no">
       <NAME>compile_and_go</NAME>
+      <REQUIRES>display_instructions</REQUIRES>
       <SCHEME>
       (define (compile-and-go expression)
       (let ((instructions
@@ -383,29 +433,25 @@ function user_print(object) {
       (set-register-contents! eceval 'flag true)
       (start eceval)))
       </SCHEME>
+      <!-- // display_instructions(
+           //      instructions(compile(stmt, "val", "return")));
+	   -->
       <JAVASCRIPT>
-function compile_and_go(expression) {
-    const instructions =
-              assemble(statements(
-                           compile(expression, "val", "return")),
-              eceval);
-    the_global_environment = setup_environment();
-    set_register_contents(eceval, "val", instructions);
+function compile_and_go(stmt) {
+    const toplevel_names = scan_out_declarations(stmt);
+    const unassigneds = list_of_unassigned(toplevel_names);
+    the_global_environment = 
+        extend_environment(toplevel_names, unassigneds, 
+            the_global_environment);
+    const instr_sequence = compile(stmt, "val", "return");
+    const instrs = assemble(instructions(instr_sequence),
+                            eceval);
+    set_register_contents(eceval, "val", instrs);
     set_register_contents(eceval, "flag", true);
     return start(eceval);
 }
       </JAVASCRIPT>
-      <JAVASCRIPT_RUN>
-function compile_and_go(expression) {
-    const instructions =
-              assemble(statements(
-                           compile(expression, "val", "return")),
-              eceval);
-    set_register_contents(eceval, "val", instructions);
-    set_register_contents(eceval, "flag", true);
-    return start(eceval);
-}
-      </JAVASCRIPT_RUN>
+
     </SNIPPET>
   </TEXT>
 
@@ -416,8 +462,458 @@ function compile_and_go(expression) {
     If we have set up stack monitoring, as at the end of
     section<SPACE/><REF NAME="sec:running-evaluator"/>, we can examine the
     stack usage of compiled code:
+    <SNIPPET HIDE="yes">
+      <NAME>eceval_2</NAME>
+      <JAVASCRIPT>
+function prompt_for_input(p) {
+    const string = prompt("EC-evaluate input:");
+    return is_null(string) ? null : parse(string);
+}
+    
+function get_global_environment() {
+    return the_global_environment;
+}
+    
+function set_global_environment(env) {
+    the_global_environment = env;
+}
+
+const eceval_operations = 
+    list(
+      // args
+      list("args"                , args),
+      list("function_expression" , function_expression),
+      list("has_no_operands"     , no_args),
+      list("first_arg"           , first_arg),
+      list(
+        "is_last_operand",
+        (a) => is_null(tail(a))
+      ),
+      list("rest_args", rest_args),
+
+      //arg
+      list(
+        "empty_arglist",
+        (_) => list()
+      ),
+      list(
+        "adjoin_arg",
+        (val, argl) => append(argl, list(val))
+      ),
+
+      // exp (sequence)
+      list("first_statement"     , first_statement),
+      list("rest_statements"     , rest_statements),
+      list("is_last_statement"   , is_last_statement),
+      list("sequence_statements" , sequence_statements),
+
+      // eval functions from meta-circular evaluator
+      list("is_self_evaluating"  , is_self_evaluating),
+      list("is_name"             , is_name),
+      list("symbol_of_name"      , symbol_of_name),
+      list(
+        "all_names_of_names",
+        (names) => map(symbol_of_name, names)
+      ),
+      list("is_assignment"           , is_assignment),
+      list("assignment_symbol"       , assignment_symbol),
+      list("assignment_value"        , assignment_value),
+      list("assign_symbol_value"     , assign_symbol_value),
+      list("is_constant_declaration" , is_constant_declaration),
+      list(
+        "constant_declaration_symbol",
+        constant_declaration_symbol
+      ),
+      list(
+        "constant_declaration_value",
+        constant_declaration_value
+      ),
+      list("is_variable_declaration", is_variable_declaration),
+      list(
+        "variable_declaration_symbol",
+        variable_declaration_symbol
+      ),
+      list(
+        "variable_declaration_value",
+        variable_declaration_value
+      ),
+      list("assign_symbol_value"  , assign_symbol_value),
+      list("is_lambda_expression" , is_lambda_expression),
+      list(
+        "lambda_parameters",
+        lambda_parameters
+      ),
+      list("lambda_body"         , lambda_body),
+      list("is_return_statement" , is_return_statement),
+      list("return_expression"   , return_expression),
+      list(
+        "is_conditional_expression",
+        is_conditional_expression
+      ),
+      list("conditional_pred" , cond_expr_pred),
+      list("conditional_cons" , cond_expr_cons),
+      list("conditional_alt"  , cond_expr_alt),
+
+      list("is_sequence"      , is_sequence),
+      list("make_sequence"    , make_sequence),
+      list("is_block"         , is_block),
+      list("block_body"       , block_body),
+      list("scan_out_declarations"    , scan_out_declarations),
+        list("does_not_return", s => !(is_block(s) || is_sequence(s) || is_return_statement(s))),
+      list("list_of_unassigned"       , list_of_unassigned),
+      list("is_application"           , is_application),
+      list("is_primitive_function"    , is_primitive_function),
+      list("apply_primitive_function" , apply_primitive_function),
+      list("is_compound_function"     , is_compound_function),
+      list("function_parameters"      , function_parameters),
+      list("function_environment"     , function_environment),
+      list("function_body"            , function_body),
+      list("extend_environment"       , extend_environment),
+      list("make_function"            , make_function),
+
+      list(
+        "lookup_symbol_value",
+        (stmt, env) => lookup_symbol_value(symbol_of_name(stmt), env)
+      ),
+      list("get_global_environment", get_global_environment),
+      list("set_global_environment", set_global_environment),
+
+      // generic helpers
+      list("is_true", is_true),
+      list("is_null", is_null),
+      list("is_pair", is_pair),
+      list("is_number", is_number),
+      list("append", append),
+      list("pair", pair),
+
+      list("prompt_for_input", prompt_for_input),
+      list("user_print", user_print),
+      list("display", display),
+      list("make_compiled_function", make_compiled_function),
+      list("is_compiled_function", is_compiled_function),
+      list("compiled_function_env", compiled_function_env),
+      list("compiled_function_entry", compiled_function_entry),
+      list("list", list),
+      list("is_false", x => ! is_true(x))
+    );
+
+const eceval_controller =	
+list(
+      branch(label("external_entry")), // branches if flag is set    
+
+      "read_eval_print_loop",
+      perform(list(op("initialize_stack"))),	
+      assign("stmt", list(op("prompt_for_input"),
+                          constant("/// EC_Eval input:"))),
+      test(list(op("is_null"), reg("stmt"))),
+      branch(label("evaluator_done")),
+      assign("env", list(op("get_global_environment"))),
+      assign("continue", label("print_result")),
+      go_to(label("eval_dispatch")),
+
+      "external_entry",
+      perform(list(op("initialize_stack"))),
+      assign("env", list(op("get_global_environment"))),
+      assign("continue", label("print_result")),
+      go_to(reg("val")),
+      
+      "print_result",
+      perform(list(op("user_print"),
+                   constant("EC-evaluate value:"), reg("val"))),
+      // to avoid infinite REPL
+      go_to(label("read_eval_print_loop")), 
+
+      "eval_dispatch",
+      test(list(op("is_self_evaluating"),
+                reg("stmt"))),
+      branch(label("ev_self_eval")),
+      test(list(op("is_name"), reg("stmt"))),
+      branch(label("ev_name")),
+      // Treat let/const the same
+      test(list(op("is_variable_declaration"),
+                reg("stmt"))),
+      branch(label("ev_variable_declaration")),
+      test(list(op("is_constant_declaration"),
+                reg("stmt"))),
+      branch(label("ev_constant_declaration")),
+      test(list(op("is_assignment"), reg("stmt"))),
+      branch(label("ev_assignment")),
+      test(list(op("is_return_statement"),
+                reg("stmt"))),
+      branch(label("ev_return")),
+      test(list(op("is_conditional_expression"),
+                reg("stmt"))),
+      branch(label("ev_if")),
+      test(list(op("is_lambda_expression"),
+                reg("stmt"))),
+      branch(label("ev_lambda")),
+      test(list(op("is_sequence"), reg("stmt"))),
+      branch(label("ev_seq")),
+      test(list(op("is_block"), reg("stmt"))),
+      branch(label("ev_block")),
+      test(list(op("is_application"), reg("stmt"))),
+      branch(label("ev_application")),
+      go_to(label("unknown_expression_type")),
+
+      "ev_return_from_seq",
+      restore("continue"),
+
+      "ev_return",
+      assign("stmt", list(op("return_expression"), reg("stmt"))),
+      go_to(label("eval_dispatch")),
+        
+      "ev_self_eval",
+      assign("val", reg("stmt")),
+      go_to(reg("continue")),
+      
+      "ev_name",
+      assign("val",
+        list(op("lookup_symbol_value"), reg("stmt"), reg("env"))),
+      go_to(reg("continue")),
+      
+      "ev_lambda",
+      assign("unev", list(op("lambda_parameters"), reg("stmt"))),
+      assign("stmt", list(op("lambda_body"), reg("stmt"))),
+      assign("val", list(op("make_function"),
+                         reg("unev"), reg("stmt"), reg("env"))),
+      go_to(reg("continue")),
+      
+      "ev_application",
+      save("continue"),
+      save("env"),
+      assign("unev", list(op("args"), reg("stmt"))),
+      save("unev"),
+      assign("stmt", list(op("function_expression"), reg("stmt"))),
+      assign("continue", label("ev_appl_did_operator")),
+      go_to(label("eval_dispatch")),
+      
+      "ev_appl_did_operator",
+      restore("unev"), // the args
+      restore("env"),
+      assign("argl", list(op("empty_arglist"))),
+      assign("fun", reg("val")), // the function_expression
+      test(list(op("has_no_operands"),
+                reg("unev"))),
+      branch(label("apply_dispatch")),
+      save("fun"),
+      
+      "ev_appl_operand_loop",
+      save("argl"),
+      assign("stmt", list(op("first_arg"), reg("unev"))),
+      test(list(op("is_last_operand"),
+                reg("unev"))),
+      branch(label("ev_appl_last_arg")),
+      save("env"),
+      save("unev"),
+      assign("continue", label("ev_appl_accumulate_arg")),
+      go_to(label("eval_dispatch")),
+      
+      "ev_appl_accumulate_arg",
+      restore("unev"),
+      restore("env"),
+      restore("argl"),
+      assign("argl", list(op("adjoin_arg"),
+                          reg("val"), reg("argl"))),
+      assign("unev", list(op("rest_args"), reg("unev"))),
+      go_to(label("ev_appl_operand_loop")),
+      
+      "ev_appl_last_arg",
+      assign("continue", label("ev_appl_accum_last_arg")),
+      go_to(label("eval_dispatch")),
+      
+      "ev_appl_accum_last_arg",
+      restore("argl"),
+      assign("argl", list(op("adjoin_arg"),
+                          reg("val"), reg("argl"))),
+      restore("fun"),
+      go_to(label("apply_dispatch")),
+      
+      "apply_dispatch",
+      test(list(op("is_primitive_function"),
+                reg("fun"))),
+      branch(label("primitive_apply")),
+      test(list(op("is_compound_function"),
+                reg("fun"))),
+      branch(label("compound_apply")),
+      test(list(op("is_compiled_function"),
+		reg("fun"))),
+      branch(label("compiled_apply")),
+      go_to(label("unknown_function_type")),
+
+      "primitive_apply",
+      assign("val", list(op("apply_primitive_function"), 
+                         reg("fun"), 
+                         reg("argl"))),
+      restore("continue"),
+      go_to(reg("continue")),
+      
+      "compound_apply",
+      assign("unev", list(op("function_parameters"), reg("fun"))),
+      assign("env", list(op("function_environment"), reg("fun"))),
+      assign("env", list(op("extend_environment"), 
+                         reg("unev"), 
+                         reg("argl"), 
+                         reg("env"))),
+      assign("stmt", list(op("function_body"), reg("fun"))),
+      test(list(op("does_not_return"),
+                reg("stmt"), constant(false))),
+      branch(label("no_return_wrapping")),
+      restore("continue"),
+      go_to(label("eval_dispatch")),
+      "no_return_wrapping",
+      assign("continue", label("end_without_return")),
+      go_to(label("eval_dispatch")),
+
+      "compiled_apply",
+      restore("continue"),
+      assign("val", list(op("compiled_function_entry"), reg("fun"))),
+      go_to(reg("val")),
+      
+      "ev_seq",
+      save("continue"),
+      assign("unev", list(op("sequence_statements"), reg("stmt"))),
+
+      "ev_sequence",
+      assign("stmt", list(op("first_statement"), reg("unev"))),
+      test(list(op("is_return_statement"), reg("stmt"))),
+      branch(label("ev_return_from_seq")),
+      test(list(op("is_last_statement"), reg("unev"))),
+      branch(label("ev_sequence_last_exp")),
+      save("unev"),
+      save("env"),
+      assign("continue", label("ev_sequence_continue")),
+      go_to(label("eval_dispatch")),
+      
+      "ev_sequence_continue",
+      restore("env"),
+      restore("unev"),
+      assign("unev", list(op("rest_statements"), reg("unev"))),
+      go_to(label("ev_sequence")),
+      
+      "ev_sequence_last_exp",
+      assign("continue", label("end_without_return")),
+      go_to(label("eval_dispatch")),
+
+      "end_without_return",
+      assign("val", constant(undefined)),
+      restore("continue"),
+      go_to(reg("continue")),
+        
+      "ev_block",
+      assign("stmt", list(op("block_body"), reg("stmt"))),
+      assign("val", list(op("scan_out_declarations"), reg("stmt"))),
+
+      save("stmt"), // Temporarily store to exp
+      assign("stmt", list(op("list_of_unassigned"), reg("val"))),
+      assign("env", list(op("extend_environment"), 
+                         reg("val"), 
+                         reg("stmt"), 
+                         reg("env"))),
+      restore("stmt"),
+      go_to(label("eval_dispatch")),
+      
+      "ev_if",
+      save("stmt"), // save expression for later
+      save("env"),
+      save("continue"),
+      assign("continue", label("ev_if_decide")),
+      assign("stmt", list(op("conditional_pred"), reg("stmt"))),
+      go_to(label("eval_dispatch")), // evaluate the predicate
+      
+      "ev_if_decide",
+      restore("continue"),
+      restore("env"),
+      restore("stmt"),
+      test(list(op("is_true"), reg("val"))),
+      branch(label("ev_if_consequent")),
+      
+      "ev_if_alternative",
+      assign("stmt", list(op("conditional_alt"), reg("stmt"))),
+      go_to(label("eval_dispatch")),
+      
+      "ev_if_consequent",
+      assign("stmt", list(op("conditional_cons"), reg("stmt"))),
+      go_to(label("eval_dispatch")),
+      
+      "ev_assignment",
+      assign("unev", list(op("assignment_symbol"), reg("stmt"))),
+      save("unev"), // save variable for later
+      assign("stmt", list(op("assignment_value"), reg("stmt"))),
+      save("env"),
+      save("continue"),
+      assign("continue", label("ev_assignment_1")),
+      go_to(label("eval_dispatch")), // evaluate assignment value
+      
+      "ev_assignment_1",
+      restore("continue"),
+      restore("env"),
+      restore("unev"),
+      perform(list(op("assign_symbol_value"),
+                   reg("unev"), reg("val"), reg("env"))),
+      go_to(reg("continue")),
+      
+      "ev_variable_declaration",
+      assign("unev", list(op("variable_declaration_symbol"),
+                          reg("stmt"))),
+      save("unev"), // save variable for later
+      assign("stmt", list(op("variable_declaration_value"),
+                          reg("stmt"))),
+      save("env"),
+      save("continue"),
+      assign("continue", label("ev_declaration")),
+      go_to(label("eval_dispatch")), // evaluate declaration value
+      
+      "ev_declaration",
+      restore("continue"),
+      restore("env"),
+      restore("unev"),
+      perform(list(op("assign_symbol_value"),
+                   reg("unev"), reg("val"), reg("env"))),
+      assign("val", constant(undefined)),
+      go_to(reg("continue")),
+      
+      "ev_constant_declaration",
+      assign("unev", list(op("constant_declaration_symbol"),
+                          reg("stmt"))),
+      save("unev"), // save constant for later
+      assign("stmt", list(op("constant_declaration_value"),
+                          reg("stmt"))),
+      save("env"),
+      save("continue"),
+      assign("continue", label("ev_declaration")),
+      go_to(label("eval_dispatch")), // evaluate declaration value
+      
+      // Error handling
+      "unknown_expression_type",
+      assign("val", constant("unknown_expression_type_error")),
+      go_to(label("signal_error")),
+      
+      "unknown_function_type",
+      restore("continue"), /// clean up stack (from apply_dispatch)
+      assign("val", constant("unknown_function_type_error")),
+      go_to(label("signal_error")),
+      
+      "signal_error",
+      perform(list(op("user_print"),
+                   constant("EC_eval error:"), reg("val"))),
+      go_to(label("read_eval_print_loop")),
+      
+      "evaluator_done"
+     );
+
+const eceval =
+    make_machine(list("stmt", "env", "val", "fun",
+                      "argl", "continue", "unev"),
+                 eceval_operations,
+                 eceval_controller);
+      </JAVASCRIPT>
+    </SNIPPET>
     <SNIPPET>
       <NAME>compile_and_go_example</NAME>
+      <REQUIRES>headline_4_1_1</REQUIRES>
+      <REQUIRES>scan_out_declarations</REQUIRES>
+      <REQUIRES>list_of_unassigned</REQUIRES>
+      <REQUIRES>functions_4_1_2</REQUIRES>
       <REQUIRES>functions_4_1_2</REQUIRES>
       <REQUIRES>functions_4_1_3</REQUIRES>
       <REQUIRES>functions_4_1_4</REQUIRES>
@@ -436,6 +932,8 @@ function compile_and_go(expression) {
       <REQUIRES>make_compiled_function</REQUIRES>
       <REQUIRES>compile_lambda</REQUIRES>
       <REQUIRES>compile_lambda_body</REQUIRES>
+      <REQUIRES>compile_return</REQUIRES>
+      <REQUIRES>compile_block</REQUIRES>
       <REQUIRES>compile_application</REQUIRES>
       <REQUIRES>construct_arglist</REQUIRES>
       <REQUIRES>compile_function_call</REQUIRES>
@@ -448,8 +946,8 @@ function compile_and_go(expression) {
       <REQUIRES>preserving</REQUIRES>
       <REQUIRES>tack_on_instruction_sequence</REQUIRES>
       <REQUIRES>parallel_instruction_sequences</REQUIRES>
-      <REQUIRES>start_eceval</REQUIRES>
       <REQUIRES>user_print_2</REQUIRES>
+      <REQUIRES>eceval_2</REQUIRES>
       <REQUIRES>compile_and_go</REQUIRES>
       <SCHEME>
       (compile-and-go
@@ -477,7 +975,7 @@ compile_and_go(
         "function factorial(n) {           \
              return n === 1                \
                  ? 1                       \
-                 : n * factorial(n - 1);   \
+                 : factorial(n - 1) * n;   \
                                           }"));
       </JAVASCRIPT>
       <JAVASCRIPT_OUTPUT>
@@ -816,25 +1314,28 @@ function fib(n) {
   $\ldots$
       </JAVASCRIPT>
     </SNIPPET>
-    To test your code, start by defining a
-    <SPLITINLINE>
-      <SCHEME>procedure</SCHEME>
-      <JAVASCRIPT>function</JAVASCRIPT>
-    </SPLITINLINE>
-    <SCHEMEINLINE>f</SCHEMEINLINE> that calls a
-    <SPLITINLINE>
-      <SCHEME>procedure</SCHEME>
-    <JAVASCRIPT>function</JAVASCRIPT></SPLITINLINE>
-    <SCHEMEINLINE>g</SCHEMEINLINE>.  Use
-    <SPLITINLINE>
-      <SCHEME><SCHEMEINLINE>compile-and-go</SCHEMEINLINE></SCHEME>
-      <JAVASCRIPT><JAVASCRIPTINLINE>compile_and_go</JAVASCRIPTINLINE>
+    <SPLIT>
+      <SCHEME>
+	To test your code, start by defining a procedure
+	<SCHEMEINLINE>f</SCHEMEINLINE> that calls a procedure
+	<SCHEMEINLINE>g</SCHEMEINLINE>.  Use
+	<SCHEMEINLINE>compile-and-go</SCHEMEINLINE>
+	to compile the definition of <SCHEMEINLINE>f</SCHEMEINLINE>
+	and start the evaluator.  Now, typing at the evaluator, define
+	<SCHEMEINLINE>g</SCHEMEINLINE> and try to call
+	<SCHEMEINLINE>f</SCHEMEINLINE>.
+      </SCHEME>
+      <JAVASCRIPT>
+	To test your code, start by declaring a function
+	<SCHEMEINLINE>f</SCHEMEINLINE> that takes a function
+	as parameter and applies it in its body. Use
+	<JAVASCRIPTINLINE>compile_and_go</JAVASCRIPTINLINE>
+	to compile the declaration of <SCHEMEINLINE>f</SCHEMEINLINE>
+	and start the evaluator. Now, typing at the evaluator,
+	pass a lambda expression as argument to
+	<SCHEMEINLINE>f</SCHEMEINLINE>.
       </JAVASCRIPT>
-    </SPLITINLINE>
-    to compile the definition of <SCHEMEINLINE>f</SCHEMEINLINE> and start the
-    evaluator.  Now, typing at the evaluator, define
-    <SCHEMEINLINE>g</SCHEMEINLINE> and try to call
-    <SCHEMEINLINE>f</SCHEMEINLINE>.
+    </SPLIT>
     <LABEL NAME="ex:compiled-call-interpreted"/>
   </EXERCISE>
 
@@ -890,7 +1391,7 @@ compile_and_run(
       </JAVASCRIPT>
       <JAVASCRIPT_OUTPUT>
 EC-evaluate value:
-ok
+undefined
 
 EC-evaluate input:
       </JAVASCRIPT_OUTPUT>
@@ -900,8 +1401,8 @@ EC-evaluate input:
 (factorial 5)
       </SCHEME>
       <SCHEMEOUTPUT>
-      ;;; EC-Eval value:
-      120
+;;; EC-Eval value:
+120
       </SCHEMEOUTPUT>
       <JAVASCRIPT>
 factorial(5)
@@ -935,12 +1436,14 @@ EC-Eval value:
     <SUBINDEX>compilation of</SUBINDEX></INDEX>
     Use the compiler to compile the metacircular evaluator of
     section<SPACE/><REF NAME="sec:mc-eval"/> and run this program using the
-    register-machine simulator.  (To compile more than one definition at a time,
-    you can package the definitions in a
-    <SPLITINLINE>
-      <SCHEME><SCHEMEINLINE>begin</SCHEMEINLINE>.)</SCHEME>
-      <JAVASCRIPT>sequence.)</JAVASCRIPT>
-    </SPLITINLINE>
+    register-machine simulator.
+    <SPLIT>
+      <SCHEME>
+	(To compile more than one definition at a time,
+	you can package the definitions in a
+	<SCHEMEINLINE>begin</SCHEMEINLINE>.)
+      </SCHEME>
+    </SPLIT>
     The resulting interpreter will run very slowly because of the multiple
     levels of interpretation, but getting all the details to work is an
     instructive exercise.

@@ -9,7 +9,12 @@
   <TEXT>
     Now that we have seen all the elements of the compiler, let us examine
     an example of compiled code to see how things fit together.  We will
-    compile the definition of a recursive
+    compile the
+    <SPLITINLINE>
+      <SCHEME>definition</SCHEME>
+      <JAVASCRIPT>declaration</JAVASCRIPT>
+    </SPLITINLINE>
+    of a recursive
     <SPLITINLINE>
       <SCHEME><SCHEMEINLINE>factorial</SCHEMEINLINE></SCHEME>
       <JAVASCRIPT><JAVASCRIPTINLINE>factorial</JAVASCRIPTINLINE></JAVASCRIPT>
@@ -44,17 +49,24 @@ function factorial(n) {        \
 
   <TEXT>
     We have specified that the value of the
-    <SCHEMEINLINE>define</SCHEMEINLINE> expression should
-    be placed in the <SCHEMEINLINE>val</SCHEMEINLINE> register.
+    <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>define</SCHEMEINLINE> expression</SCHEME>
+      <JAVASCRIPT>declaration</JAVASCRIPT>
+    </SPLITINLINE>
+    should be placed in the <SCHEMEINLINE>val</SCHEMEINLINE> register.
     We don<APOS/>t care what the compiled
-    code does after executing the <SCHEMEINLINE>define</SCHEMEINLINE>,
+    code does after executing the
+    <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>define</SCHEMEINLINE>,</SCHEME>
+      <JAVASCRIPT>declaration</JAVASCRIPT>
+    </SPLITINLINE>
     so our choice of
     <SPLITINLINE>
       <SCHEME>
 	<SCHEMEINLINE>next</SCHEMEINLINE>
       </SCHEME>
       <JAVASCRIPT>
-	<JAVASCRIPTINLINE>"next"</JAVASCRIPTINLINE>
+	<JAVASCRIPTINLINE>next</JAVASCRIPTINLINE>
       </JAVASCRIPT>
     </SPLITINLINE>
     as the linkage
@@ -62,28 +74,72 @@ function factorial(n) {        \
   </TEXT>
 
   <TEXT>
-    <SCHEMEINLINE>Compile</SCHEMEINLINE> determines that the expression is a
-    definition, so it calls
+    <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>Compile</SCHEMEINLINE></SCHEME>
+      <JAVASCRIPT>
+	The function <SCHEMEINLINE>compile</SCHEMEINLINE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    determines that the
+    <SPLITINLINE>
+      <SCHEME>
+	expression is a definition,
+      </SCHEME>
+      <JAVASCRIPT>
+	statement is a constant declaration
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    so it calls
     <SPLITINLINE>
       <SCHEME><SCHEMEINLINE>compile-definition</SCHEMEINLINE></SCHEME>
-      <JAVASCRIPT><JAVASCRIPTINLINE>compile_definition</JAVASCRIPTINLINE>
+      <JAVASCRIPT>
+	<JAVASCRIPTINLINE>compile_constant_declaration</JAVASCRIPTINLINE>
       </JAVASCRIPT>
     </SPLITINLINE>
     to compile code to compute the value to be assigned (targeted to
     <SCHEMEINLINE>val</SCHEMEINLINE>), followed by code to install the
-    definition, followed by code to put the value of the
-    <SCHEMEINLINE>define</SCHEMEINLINE> (which is the symbol
-    <SCHEMEINLINE>ok</SCHEMEINLINE>)
+    <SPLITINLINE>
+      <SCHEME>definition,</SCHEME>
+      <JAVASCRIPT>declaration,</JAVASCRIPT>
+    </SPLITINLINE>
+    followed by code to put the value of the
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>define</SCHEMEINLINE> (which is the symbol
+	<SCHEMEINLINE>ok</SCHEMEINLINE>)
+      </SCHEME>
+      <JAVASCRIPT>
+	declaration (which is the value
+	<SCHEMEINLINE>undefined</SCHEMEINLINE>)
+      </JAVASCRIPT>
+    </SPLITINLINE>    
     into the target register, followed finally by the linkage code.
-    <SCHEMEINLINE>Env</SCHEMEINLINE> is preserved around the computation of the
-    value, because it is needed in order to install the definition.  Because
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>Env</SCHEMEINLINE>	
+      </SCHEME>
+      <JAVASCRIPT>
+	Register <SCHEMEINLINE>env</SCHEMEINLINE>	
+      </JAVASCRIPT>
+    </SPLITINLINE>    
+    is preserved around the computation of the
+    value, because it is needed in order to install the
+    <SPLITINLINE>
+      <SCHEME>
+	definition.
+      </SCHEME>
+      <JAVASCRIPT>
+	declaration.
+      </JAVASCRIPT>
+    </SPLITINLINE>    
+    Because
     the linkage is
     <SPLITINLINE>
       <SCHEME>
 	<SCHEMEINLINE>next</SCHEMEINLINE>,
       </SCHEME>
       <JAVASCRIPT>
-	<JAVASCRIPTINLINE>"next"</JAVASCRIPTINLINE>,
+	<JAVASCRIPTINLINE>next</JAVASCRIPTINLINE>,
       </JAVASCRIPT>
     </SPLITINLINE>
     there is no linkage code
@@ -100,25 +156,46 @@ function factorial(n) {        \
       (assign val (const ok))
       </SCHEME>
       <JAVASCRIPT>
-$\langle \textit{save}$ env $\textit{if modified by code to compute value}\rangle$
-$\langle \textit{compilation of definition value, target}$ val$, \textit{linkage}$ next$\rangle$
-$\langle \textit{restore}$ env $\textit{if saved above}\rangle$
-perform(list(op("define_variable"),
-             constant("factorial"), reg("val"), reg("env"));
-assign("val", constant(ok));
+$\langle save$ env $if$ $modified$ $by$ $code$ $to$ $compute$ $value\rangle$
+$\langle compilation$ $of$ $declaration$ $value,$ $target$ val$,$ $linkage$ next$\rangle$
+$\langle restore$ env $if$ $saved$ $above\rangle$
+perform(list(op("assign_symbol_value"),
+             constant("factorial"),
+             reg("val"),
+             reg("env")),
+assign("val", constant(undefined))
       </JAVASCRIPT>
     </SNIPPET>
   </TEXT>
 
   <TEXT>
     The expression that is to be compiled to produce the value for the
-    variable <SCHEMEINLINE>factorial</SCHEMEINLINE> is a
-    <SCHEMEINLINE>lambda</SCHEMEINLINE> expression whose value is the
+    <SPLITINLINE>
+      <SCHEME>variable</SCHEME>
+      <JAVASCRIPT>constant</JAVASCRIPT>
+    </SPLITINLINE>
+    <SCHEMEINLINE>factorial</SCHEMEINLINE>
+    is a
+    <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>lambda</SCHEMEINLINE></SCHEME>
+      <JAVASCRIPT>lambda</JAVASCRIPT>
+    </SPLITINLINE>
+    expression whose value is the
     <SPLITINLINE>
       <SCHEME>procedure</SCHEME>
       <JAVASCRIPT>function</JAVASCRIPT>
     </SPLITINLINE>
-    that computes factorials. <SCHEMEINLINE>Compile</SCHEMEINLINE> handles this
+    that computes factorials.
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>Compile</SCHEMEINLINE>
+      </SCHEME>
+      <JAVASCRIPT>
+	The function
+	<SCHEMEINLINE>compile</SCHEMEINLINE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    handles this
     by calling
     <SPLITINLINE>
       <SCHEME><SCHEMEINLINE>compile-lambda</SCHEMEINLINE>,</SCHEME>
@@ -150,10 +227,10 @@ assign("val", constant(ok));
     </SPLITINLINE>
     code itself begins by extending the
     <SPLITINLINE>
-      <SCHEME>procedure<APOS/>s</SCHEME>
-      <JAVASCRIPT>function<APOS/>s</JAVASCRIPT>
+      <SCHEME>procedure<APOS/>s definition</SCHEME>
+      <JAVASCRIPT>function<APOS/>s declaration</JAVASCRIPT>
     </SPLITINLINE>
-    definition environment by a frame that binds
+    environment by a frame that binds
     the formal parameter <SCHEMEINLINE>n</SCHEMEINLINE> to the
     <SPLITINLINE>
       <SCHEME>procedure</SCHEME>
@@ -164,7 +241,11 @@ assign("val", constant(ok));
       <SCHEME>procedure</SCHEME>
       <JAVASCRIPT>function</JAVASCRIPT>
     </SPLITINLINE>
-    body.  Since this code for the value of the variable
+    body.  Since this code for the value of the
+    <SPLITINLINE>
+      <SCHEME>variable</SCHEME>
+      <JAVASCRIPT>constant</JAVASCRIPT>
+    </SPLITINLINE>
     doesn<APOS/>t modify the <SCHEMEINLINE>env</SCHEMEINLINE> register, the
     optional <SCHEMEINLINE>save</SCHEMEINLINE>
     and <SCHEMEINLINE>restore</SCHEMEINLINE> shown above aren<APOS/>t
@@ -208,11 +289,13 @@ assign("val", constant(ok));
                      constant(n), 
                      reg("argl"), 
                      reg("env"))),
-  $\langle \textit{compilation of function body} \rangle$
+  $\langle compilation$ $of$ $function$ $body\rangle$
 "after_lambda1",
-  perform(list(op("define_variable"), 
-               constant("factorial"), reg("val"), reg("env"))),
-  assign("val", constant("ok")),
+  perform(list(op("assign_symbol_value"), 
+               constant("factorial"), 
+               reg("val"), 
+               reg("env"))),
+  assign("val", constant(undefined))
       </JAVASCRIPT>
     </SNIPPET>
   </TEXT>
@@ -229,17 +312,37 @@ assign("val", constant(ok));
       <JAVASCRIPT>
       <JAVASCRIPTINLINE>compile_lambda_body</JAVASCRIPTINLINE>)</JAVASCRIPT>
     </SPLITINLINE>
-    as a sequence with target <SCHEMEINLINE>val</SCHEMEINLINE> and linkage
+    <SPLITINLINE>
+      <SCHEME>as a sequence</SCHEME>
+    </SPLITINLINE>
+    with target <SCHEMEINLINE>val</SCHEMEINLINE> and linkage
     <SPLITINLINE>
       <SCHEME>
 	<SCHEMEINLINE>return</SCHEMEINLINE>.
       </SCHEME>
       <JAVASCRIPT>
-	<JAVASCRIPTINLINE>"return"</JAVASCRIPTINLINE>.
+	<JAVASCRIPTINLINE>return_undefined</JAVASCRIPTINLINE>.
       </JAVASCRIPT>
     </SPLITINLINE>
-    The sequence in this case consists of
-    a single <SCHEMEINLINE>if</SCHEMEINLINE> expression:
+    The
+    <SPLITINLINE>
+      <SCHEME>
+	sequence
+      </SCHEME>
+      <JAVASCRIPT>
+	body
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    in this case consists of
+    a single
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>if</SCHEMEINLINE> expression:
+      </SCHEME>
+      <JAVASCRIPT>
+	<JAVASCRIPTINLINE>return</JAVASCRIPTINLINE> statement:
+      </JAVASCRIPT>
+    </SPLITINLINE>
     <SNIPPET EVAL="no">
       <SCHEME>
       (if (= n 1)
@@ -247,47 +350,70 @@ assign("val", constant(ok));
       (* (factorial (- n 1)) n))
       </SCHEME>
       <JAVASCRIPT>
-n === 1 
+return n === 1 
     ? 1 
-    : n * factorial(n - 1)
+    : factorial(n - 1) * n;
       </JAVASCRIPT>
     </SNIPPET>
   </TEXT>
 
   <TEXT>
+    <SPLIT>
+      <JAVASCRIPT>
+	The function
+	<JAVASCRIPTINLINE>compile_return_statement</JAVASCRIPTINLINE>
+	compiles the return expression with the same target
+	<SCHEMEINLINE>val</SCHEMEINLINE> but with linkage
+	<SCHEMEINLINE>return</SCHEMEINLINE>, because the return
+	expression is the last expression to be evaluated in the
+	body, and its value is to be returned from the function.
+      </JAVASCRIPT>
+    </SPLIT>
     <SPLITINLINE>
       <SCHEME><SCHEMEINLINE>Compile-if</SCHEMEINLINE></SCHEME>
-      <JAVASCRIPT><JAVASCRIPTINLINE>Compile_if</JAVASCRIPTINLINE></JAVASCRIPT>
+      <JAVASCRIPT>The return expression is a conditional expression and thus
+      <JAVASCRIPTINLINE>compile_conditional_expression</JAVASCRIPTINLINE>
+      </JAVASCRIPT>
     </SPLITINLINE>
     generates code that first computes the predicate (targeted to
     <SCHEMEINLINE>val</SCHEMEINLINE>), then checks the result and branches
     around the true branch if the predicate is false.
-    <SCHEMEINLINE>Env</SCHEMEINLINE> and <LATEXINLINE>$\texttt{continue}$</LATEXINLINE>
-    are preserved around the predicate code, since they may be needed for the
-    rest of the <SCHEMEINLINE>if</SCHEMEINLINE> expression.  Since the
-    <SCHEMEINLINE>if</SCHEMEINLINE> expression is the final expression (and
-    only expression) in the sequence making up the
     <SPLITINLINE>
-      <SCHEME>procedure</SCHEME>
-      <JAVASCRIPT>function</JAVASCRIPT>
+      <SCHEME><SCHEMEINLINE>Env</SCHEMEINLINE></SCHEME>
+      <JAVASCRIPT>Registers <SCHEMEINLINE>env</SCHEMEINLINE></JAVASCRIPT>
     </SPLITINLINE>
-    body, its target is <SCHEMEINLINE>val</SCHEMEINLINE> and its linkage is
+    and <SCHEMEINLINE>continue</SCHEMEINLINE>
+    are preserved around the predicate code, since they may be needed for the
+    rest of the
     <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>if</SCHEMEINLINE></SCHEME>
+      <JAVASCRIPT>conditional</JAVASCRIPT>
+    </SPLITINLINE>
+    expression.
+    <SPLIT>
       <SCHEME>
+    Since the
+    <SCHEMEINLINE>if</SCHEMEINLINE> expression 
+    is the final
+    expression (and only expression) in the sequence making up
+    the procedure
+    body, its target is <SCHEMEINLINE>val</SCHEMEINLINE> and its linkage is
 	<SCHEMEINLINE>return</SCHEMEINLINE>,
+    so
+    the
       </SCHEME>
       <JAVASCRIPT>
-	<JAVASCRIPTINLINE>"return"</JAVASCRIPTINLINE>,
+	The
       </JAVASCRIPT>
-    </SPLITINLINE>
-    so the true and false branches are both
+    </SPLIT>
+    true and false branches are both
     compiled with target <SCHEMEINLINE>val</SCHEMEINLINE> and linkage
     <SPLITINLINE>
       <SCHEME>
 	<SCHEMEINLINE>return</SCHEMEINLINE>.
       </SCHEME>
       <JAVASCRIPT>
-	<JAVASCRIPTINLINE>"return"</JAVASCRIPTINLINE>.
+	<JAVASCRIPTINLINE>return</JAVASCRIPTINLINE>.
       </JAVASCRIPT>
     </SPLITINLINE>
     (That is, the value of the conditional,
@@ -296,7 +422,7 @@ n === 1
       <SCHEME>procedure.)</SCHEME>
       <JAVASCRIPT>function.)</JAVASCRIPT>
     </SPLITINLINE>
-    <SNIPPET EVAL="no" LATEX="yes">
+    <SNIPPET LATEX="yes">
       <SCHEME>
       ^save^ continue^,^ env ^if modified by predicate and needed by branches^
       ^compilation of predicate, target^ val^, linkage^ next
@@ -310,16 +436,16 @@ n === 1
       after-if3
       </SCHEME>
       <JAVASCRIPT>
-  $\langle \textit{save}$ continue$,$ env $\textit{if modified by predicate and needed by branches} \rangle$
-  $\langle \textit{compilation of predicate, target}$ val$, \textit{linkage}$ next$\rangle$
-  $\langle \textit{restore}$ continue$,$ env $\textit{if saved above}\rangle$
+  $\langle save$ continue$,$ env $if$ $modified$ $by$ $predicate$ $and$ $needed$ $by$ $branches \rangle$
+  $\langle compilation$ $of$ $predicate,$ $target$ val$,$ $linkage$ next$\rangle$
+  $\langle restore$ continue$,$ env $if$ $saved$ $above \rangle$
   test(list(op("is_false"), reg("val"))),
   branch(label("false_branch4")),
 "true_branch5",
-  $\langle \textit{compilation of true branch, target}$ val$, \textit{linkage}$ return$\rangle$
+  $\langle compilation$ $of$ $true$ $branch,$ $target$ val$,$ $linkage$ $\texttt{return}\rangle$
 "false_branch4",
-  $\langle \textit{compilation of false branch, target}$ val$, \textit{linkage}$ return$\rangle$
-"after_if3",
+  $\langle compilation$ $of$ $false$ $branch,$ $target$ val$,$ $linkage$ $\texttt{return}\rangle$
+"after_cond3",
       </JAVASCRIPT>
     </SNIPPET>
   </TEXT>
@@ -342,8 +468,8 @@ n === 1
     (the symbol <SCHEMEINLINE>===</SCHEMEINLINE>)
       </SCHEME>
       <JAVASCRIPT>
-	operator
-	(the name <JAVASCRIPTINLINE>"==="</JAVASCRIPTINLINE>)
+	function expression
+	(the symbol <JAVASCRIPTINLINE>"==="</JAVASCRIPTINLINE>)
       </JAVASCRIPT>
     </SPLITINLINE>
     and places this value in
@@ -370,7 +496,16 @@ n === 1
       <JAVASCRIPT><JAVASCRIPTINLINE>after_call</JAVASCRIPTINLINE></JAVASCRIPT>
     </SPLITINLINE>
     label.  The requirements to preserve registers
-    around the evaluation of the operator and operands don<APOS/>t result in
+    around the evaluation of the
+    <SPLITINLINE>
+      <SCHEME>
+	operator and operands
+      </SCHEME>
+      <JAVASCRIPT>
+	function and argument expressions
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    don<APOS/>t result in
     any saving of registers, because in this case those evaluations don<APOS/>t
     modify the registers in question.
 
@@ -405,13 +540,13 @@ n === 1
   test(list(op("primitive_function"), reg("fun"))),
   branch(label("primitive_branch17")),
 "compiled_branch16",
-  assign("continue", list(label("after_call15"))),
+  assign("continue", label("after_call15")),
   assign("val", list(op("compiled_function_entry"), reg("fun"))),
   go_to(reg("val")),
 "primitive_branch17",
   assign("val", list(op("apply_primitive_function"), reg("fun"), 
                      reg("argl"))),
-"after_call15",
+"after_call15"
       </JAVASCRIPT>
     </SNIPPET>
   </TEXT>
@@ -424,7 +559,7 @@ n === 1
 	<SCHEMEINLINE>return</SCHEMEINLINE>)
       </SCHEME>
       <JAVASCRIPT>
-	<JAVASCRIPTINLINE>"return"</JAVASCRIPTINLINE>)
+	<JAVASCRIPTINLINE>return</JAVASCRIPTINLINE>)
       </JAVASCRIPT>
     </SPLITINLINE>
     to
@@ -435,7 +570,7 @@ n === 1
       </SCHEME>
       <JAVASCRIPT>
 assign("val", constant(1)),
-go_to(reg("continue")),
+go_to(reg("continue"))
       </JAVASCRIPT>
     </SNIPPET>
   </TEXT>
@@ -451,7 +586,12 @@ go_to(reg("continue")),
       <SCHEME>procedure</SCHEME>
       <JAVASCRIPT>function</JAVASCRIPT>
     </SPLITINLINE>
-    is the value of the symbol <SCHEMEINLINE>*</SCHEMEINLINE>, and the arguments
+    is the value of the symbol
+    <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>*</SCHEMEINLINE>,</SCHEME>
+      <JAVASCRIPT><JAVASCRIPTINLINE>"*"</JAVASCRIPTINLINE>,</JAVASCRIPT>
+    </SPLITINLINE>
+    and the arguments
     are <SCHEMEINLINE>n</SCHEMEINLINE> and the result of another
     <SPLITINLINE>
       <SCHEME>procedure</SCHEME>
@@ -473,7 +613,7 @@ go_to(reg("continue")),
     </SPLITINLINE>
     Notice that the possible <SCHEMEINLINE>save</SCHEMEINLINE> and
     <SCHEMEINLINE>restore</SCHEMEINLINE> of
-    <LATEXINLINE>$\texttt{continue}$</LATEXINLINE> and
+    <SCHEMEINLINE>continue</SCHEMEINLINE> and
     <SCHEMEINLINE>env</SCHEMEINLINE> around the predicate, shown above,
     are in fact generated, because these registers are modified by the
     <SPLITINLINE>
@@ -491,11 +631,20 @@ go_to(reg("continue")),
 	<SCHEMEINLINE>return</SCHEMEINLINE>
       </SCHEME>
       <JAVASCRIPT>
-	<JAVASCRIPTINLINE>"return"</JAVASCRIPTINLINE>
+	<JAVASCRIPTINLINE>return</JAVASCRIPTINLINE>
       </JAVASCRIPT>
     </SPLITINLINE>
     linkage in the branches.
-    <INDEX>compiler for Scheme<SUBINDEX>example compilation|)</SUBINDEX></INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>compiler for Scheme
+	<SUBINDEX>example compilation|)</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>compiler for JavaScript
+	<SUBINDEX>example compilation|)</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
   </TEXT>
 
   <EXERCISE>
@@ -516,7 +665,7 @@ go_to(reg("continue")),
 function factorial_alt(n) {
     return  n === 1  
         ? 1
-        : factorial_alt(n - 1) * n;
+        : n * factorial_alt(n - 1);
 }
       </JAVASCRIPT>
     </SNIPPET>
@@ -626,12 +775,12 @@ function factorial(n) {
 // construct the function and skip over code for the function body
   assign("val",
     list(op("make-compiled-procedure"), label("entry2"), reg("env"))),
-  go_to(label("after-lambda1")),
+  go_to(label("after_lambda1")),
 
 "entry2",     // calls to factorial will enter here
-  assign("env", list(op("compiled-function-env"), reg("fun"))),
+  assign("env", list(op("compiled_function_env"), reg("fun"))),
   assign("env",
-    list(op("extend-environment"), const(list("n")),
+    list(op("extend_environment"), constant(list("n")),
          reg("argl"), reg("env"))),
 // begin actual procedure body
   save("continue"),
@@ -639,38 +788,36 @@ function factorial(n) {
 
 // compute n === 1
   assign("fun", list(op("lookup_symbol_value"), 
-                     const("==="), reg("env"))),
-  assign("val", const(1)),
+                     constant("==="), reg("env"))),
+  assign("val", constant(1)),
   assign("argl", list(op("list","), reg("val"))),
   assign("val", list(op("lookup_symbol_value"), 
-                     const(n), reg("env"))),
+                     constant(n), reg("env"))),
   assign("argl, list(op("pair"), reg("val"), reg("argl"))),
-  test(list(op("is_primitive_function"), reg("proc"))),
-  branch(label("primitive-branch17")),
-"compiled-branch16",
-  assign("continue", label("after-call15")),
-  assign(val, list(op("compiled-procedure-entry"), 
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch17")),
+"compiled_branch16",
+  assign("continue", label("after_call15")),
+  assign(val, list(op("compiled_function_entry"), 
                    reg("fun"))),
   go_to(reg("val")),
-"primitive-branch17",
+"primitive_branch17",
   assign("val",
-    list(op("apply-primitive-procedure"), 
+    list(op("apply_primitive_function"), 
          reg("fun"), reg("argl"))),
-"after-call15",            // val now contains result of n === 1
+"after_call15",            // val now contains result of n === 1
   restore env),
   restore continue),
   test(list(op("is_false"), reg("val"))),
   branch(label("false-branch4")),
 "true-branch5",            // return 1
-  assign("val", const(1)),
+  assign("val", constant(1)),
   go_to(reg("continue")),
 
 "false-branch4",
-                           // compute &amp; return factorial(n - 1) * n
+// compute &amp; return factorial(n - 1) * n
   assign("fun", list(op("lookup_symbol_value"),
-                     const("*"), reg("env"))),
-  save("continue"),
-  save("proc"),            // save * function
+                     constant("*"), reg("env"))),
     </JAVASCRIPT>
   </SNIPPET>
   <CAPTION>
@@ -682,7 +829,9 @@ function factorial(n) {
   (continued on next page).
   </CAPTION>
   <!--  \indcode{factorial}[compilation of] -->
-  <!-- FIXME: make this go into LaTeX: \addtocounter{figure}{-1} -->
+  <PDF_ONLY>
+    \addtocounter{figure}{-1}
+  </PDF_ONLY>
   <LABEL NAME="fig:comp-factorial1"/>
     </FIGURE>
 
@@ -743,46 +892,48 @@ function factorial(n) {
       (assign val (const ok))
     </SCHEME>
     <JAVASCRIPT>
+  save("continue"),
+  save("fun"),            // save * function
   assign("val", list(op("lookup_symbol_value"), 
-                     const(n), reg("env"))),
-  assign("argl, list(op("list"), reg("val"))),
+                     constant(n), reg("env"))),
+  assign("argl", list(op("list"), reg("val"))),
   save("argl"),            // save partial argument list for *
 
 // compute factorial(n - 1), which is the other argument for *
-  assign("fu",n",
-    list(op("lookup_symbol_value"), const(factorial), reg("env"))),
-  save("proc"),            // factorial function
+  assign("fun",
+    list(op("lookup_symbol_value"), constant("factorial"), reg("env"))),
+  save("fun"),            // factorial function
 
 // compute n - 1, which is the argument for factorial
   assign("fun", list(op("lookup_symbol_value"), 
-                     const("-"), reg("env"))),
-  assign("val", const(1)),
+                     constant("-"), reg("env"))),
+  assign("val", constant(1)),
   assign("argl", list(op("list","), reg("val"))),
-  assign("val", list(op("lookup_symbol_value"), const(n), 
+  assign("val", list(op("lookup_symbol_value"), constant(n), 
                      reg("env"))),
-  assign("argl, list(op("pair"), reg("val"), reg("argl"))),
-  test(list(op("primitive-procedure?"), reg("fun"))),
-  branch(label("primitive-branch8")),
+  assign("argl", list(op("pair"), reg("val"), reg("argl"))),
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch8")),
       compiled-branch7
-  assign("continue label("after-call6")),
-  assign(val, list(op("compiled-procedure-entry"), reg("fun"))),
+  assign("continue", label("after_call6")),
+  assign(val, list(op("compiled_function_entry"), reg("fun"))),
   go_to(reg("val")),
-"primitive-branch8",
-  assign("val", list(op("apply-primitive-procedure"), 
+"primitive_branch8",
+  assign("val", list(op("apply_primitive_function"), 
                      reg("fun"), reg("argl"))),
   
-"after-call6",            // val now contains result of n - 1
-  assign(","argl, list(op("list"), reg("val"))),
-  restore proc),          // restore factorial
+"after_call6",            // val now contains result of n - 1
+  assign("argl", list(op("list"), reg("val"))),
+  restore("fun"),         // restore factorial
                           // apply factorial
   test(list(op("is_primitive_function"), reg("fun"))),
-  branch(label("primitive-branch11")),
-"compiled-branch10",
-  assign("continue label("after-call9")),
-  assign(val, list(op("compiled-procedure-entry"), reg("fun"))),
+  branch(label("primitive_branch11")),
+"compiled_branch10",
+  assign("continue", label("after_call9")),
+  assign(val, list(op("compiled_function_entry"), reg("fun"))),
   go_to(reg("val")),
-"primitive-branch11",
-  assign("val", list(op("apply-primitive-procedure"), 
+"primitive_branch11",
+  assign("val", list(op("apply_primitive_function"), 
                      reg("fun"), reg("argl"))),
     </JAVASCRIPT>
   </SNIPPET>
@@ -792,39 +943,37 @@ function factorial(n) {
 
     <FIGURE>
       <SNIPPET EVAL="no">
-	<NAME>compiled_factorial_2</NAME>
+	<NAME>compiled_factorial_3</NAME>
 	<JAVASCRIPT>
-"after-call9",            // val now has result of factorial(n - 1)
+"after_call9",            // val now has result of factorial(n - 1)
   restore("argl"),        // restore partial argument list for *
   assign("argl", list(op("pair"), reg("val"), reg("argl"))),
   restore("fun"),         // restore *
-  restore("continue"),    // apply * and return its value
+  restore("continue"),    
+
+// apply * and return its value
   test(list(op("is_primitive_function"), reg("fun"))),
-  branch(label("primitive-branch14")),
-"compiled-branch13",
-                          // note that compound function here
-                          // is called tail-recursively
-  assign("val", list(op("compiled-procedure-entry"), reg("fun"))),
+  branch(label("primitive_branch14")),
+"compiled_branch13",
+// note that compound function here is called tail-recursively
+  assign("val", list(op("compiled_function_entry"), reg("fun"))),
   go_to(reg("val")),
-"primitive-branch14",
-  assign("val", list(op("apply-primitive-procedure"), 
+"primitive_branch14",
+  assign("val", list(op("apply_primitive_function"), 
                      reg("fun"), reg("argl"))),
   go_to(reg("continue")),
-"after-call12",
-"after-if3",
-"after-lambda1",
+"after_call12",
+"after_cond3",
+"after_lambda1",
 // assign the function to the name factorial
   perform(list(op("assign_symbol_value"), 
-               const(factorial), reg("val"), reg("env"))),
-  assign("val", const(ok)),
+               constant("factorial"), reg("val"), reg("env"))),
+  assign("val", constant(undefined))
     </JAVASCRIPT>
   </SNIPPET>
   <CAPTION>(continued)</CAPTION>
     <LABEL NAME="fig:continued_11"/>
     </FIGURE>
-
-    
-    <!-- FIXME: make this go into LaTeX: \addtocounter{figure}{-1} -->
 
       <EXERCISE>
 	<LABEL NAME="ex:compiled-code"/>
@@ -874,59 +1023,58 @@ function factorial(n) {
       (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
     </SCHEME>
     <JAVASCRIPT>
-  assign("val", list(op("make-compiled-procedure"),
+  assign("val", list(op("make_compiled_function"),
                      label("entry16")),
         reg env)),
-  go_to(label("after-lambda15")),
+  go_to(label("after_lambda15")),
 "entry16",
-  assign(env, list(op("compiled-procedure-env"), 
+  assign(env, list(op("compiled_function_env"), 
                    reg("fun"))),
-  assign("env", list(op("extend-environment","), 
-                     const((x)), reg("argl"), reg("env"))),
+  assign("env", list(op("extend_environment","), 
+                     constant("x"), reg("argl"), reg("env"))),
   assign("fun", list(op("lookup_symbol_value"), 
-                     const(+), reg("env"))),
+                     constant("+"), reg("env"))),
   save("continue"),
-  save("proc"),
+  save("fun"),
   save("env"),
   assign("fun", list(op("lookup_symbol_value"),
-                     const(g), reg("env"))),
-  save("proc"),
+                     constant("g"), reg("env"))),
+  save("fun"),
   assign("fun", list(op("lookup_symbol_value"),
-                     const(+), reg("env"))),
-  assign("val", const(2)),
-  assign("argl", list(op("list","), reg("val"))),
+                     constant("+"), reg("env"))),
+  assign("val", constant(2)),
+  assign("argl", list(op("list"), reg("val"))),
   assign("val", list(op("lookup_symbol_value"),
-                     const(x), reg("env"))),
+                     constant("x"), reg("env"))),
   assign("argl, list(op("pair"), reg("val"), reg("argl"))),
   test(list(op("is_primitive_function"), reg("fun"))),
-  branch(label("primitive-branch19")),
-"compiled-branch18",
-  assign("continue", label("after-call17")),
-  assign(val, list(op("compiled-procedure-entry"), 
+  branch(label("primitive_branch19")),
+"compiled_branch18",
+  assign("continue", label("after_call17")),
+  assign(val, list(op("compiled_function_entry"), 
                    reg("fun"))),
   go_to(reg("val")),
-"primitive-branch19",
-  assign("val", list(op("apply-primitive-procedure"), 
+"primitive_branch19",
+  assign("val", list(op("apply_primitive_function"), 
                      reg("fun"), reg("argl"))),
-"after-call17",
+"after_call17",
   assign("argl", list(op("list"), reg("val"))),
-  restore("proc"),
-  test(list(op("primitive-procedure?"), reg("fun"))),
-  branch(label("primitive-branch22")),
-"compiled-branch21",
-  assign("continue", label("after-call20")),
-  assign(val, list(op("compiled-procedure-entry"), 
+  restore("fun"),
+  test(list(op("is_primitive_function"), reg("fun"))),
+  branch(label("primitive_branch22")),
+"compiled_branch21",
+  assign("continue", label("after_call20")),
+  assign(val, list(op("compiled_function_entry"), 
                    reg("fun"))),
   go_to(reg("val")),
-"primitive-branch22",
-  assign("val", list(op("apply_primitive_function"),
-                     reg("fun"), reg("argl"))),
     </JAVASCRIPT>
   </SNIPPET>
   <CAPTION>An example of compiler output (continued on next page).
   See exercise<SPACE/><REF NAME="ex:compiled-code"/>.
   </CAPTION>
-    <!-- FIXME: make this go into LaTeX: \addtocounter{figure}{-1} -->
+  <PDF_ONLY>
+    \addtocounter{figure}{-1}
+  </PDF_ONLY>
   <LABEL NAME="fig:compilation-example1"/>
   </FIGURE>
 
@@ -937,7 +1085,7 @@ function factorial(n) {
       after-call20
       (assign argl (op list), (reg val))
       (restore env)
-      (assign val (op lookup-variable-value) const(x) (reg env))
+      (assign val (op lookup-variable-value) (const x) (reg env))
       (assign argl (op cons) (reg val) (reg argl))
       (restore proc)
       (restore continue)
@@ -955,47 +1103,69 @@ function factorial(n) {
       (assign val (const ok))
     </SCHEME>
     <JAVASCRIPT>
-"after-call20",
+"primitive_branch22",
+  assign("val", list(op("apply_primitive_function"),
+                     reg("fun"), reg("argl"))),
+"after_call20",
   assign("argl", list(op("list"), reg("val"))),
   restore("env"),
   assign("val", list(op("lookup_symbol_value"),
-                   const(x), reg("env"))),
+                   constant("x"), reg("env"))),
   assign("argl", list(op("pair"), reg("val"), reg("argl"))),
   restore("fun"),
   restore("continue"),
   test(list(op("is_primitive_function"), reg("fun"))),
-  branch(label("primitive-branch25")),
-"compiled-branch24",
-  assign("val", list(op("compiled-procedure-entry"), 
+  branch(label("primitive_branch25")),
+"compiled_branch24",
+  assign("val", list(op("compiled_function_entry"), 
                      reg("fun"))),
   go_to(reg("val")),
-"primitive-branch25",
+"primitive_branch25",
   assign("val", list(op("apply_primitive_function"), 
                      reg("fun"), reg("argl"))),
   go_to(reg("continue")),
-"after-call23",
-"after-lambda15",
-  perform(list(op("define-variable"), 
-               const("f"), reg("val"), reg("env"))),
-  assign("val", const("ok"))
+"after_call23",
+"after_lambda15",
+  perform(list(op("assign_symbol_value"), 
+               constant("f"), reg("val"), reg("env"))),
+  assign("val", constant(undefined))
     </JAVASCRIPT>
   </SNIPPET>
-    <!-- FIXME: make this go into LaTeX: \addtocounter{figure}{-1} -->
+  <PDF_ONLY>
+    \addtocounter{figure}{-1}
+  </PDF_ONLY>
     <CAPTION>(continued)</CAPTION>
     <LABEL NAME="fig:continued_2"/>
   </FIGURE>
 
-      <EXERCISE> 
+  <EXERCISE> 
     <INDEX>order of evaluation<SUBINDEX>in compiler</SUBINDEX></INDEX>
-    <INDEX>compiler for Scheme
-    <SUBINDEX>order of operand evaluation</SUBINDEX></INDEX>
-    What order of evaluation does our compiler produce for operands of a
-    combination?  Is it left-to-right, right-to-left, or some other order?
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>compiler for Scheme
+	<SUBINDEX>order of operand evaluation</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>compiler for JavaScript
+	<SUBINDEX>order of argument evaluation</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    What order of evaluation does our compiler produce for
+    <SPLITINLINE>
+      <SCHEME>operands of a combination?</SCHEME>
+      <JAVASCRIPT>arguments of an application?</JAVASCRIPT>
+    </SPLITINLINE>
+    Is it left-to-right, right-to-left, or some other order?
     Where in the compiler is this order determined?  Modify the compiler
     so that it produces some other order of evaluation.  (See the
     discussion of order of evaluation for the explicit-control evaluator
     in section<SPACE/><REF NAME="sec:eceval-core"/>.)  How does changing the
-    order of operand evaluation affect the efficiency of the code that
+    order of
+    <SPLITINLINE>
+      <SCHEME>operand</SCHEME>
+      <JAVASCRIPT>argument</JAVASCRIPT>
+    </SPLITINLINE>
+    evaluation affect the efficiency of the code that
     constructs the argument list?
   </EXERCISE>
 
@@ -1016,6 +1186,7 @@ function factorial(n) {
   </EXERCISE>
 
   <EXERCISE>
+    <LABEL NAME="ex:open-code"/>
     <INDEX>compiler for Scheme
     <SUBINDEX>open coding of primitives</SUBINDEX></INDEX>
     <INDEX>open coding of primitives</INDEX>
@@ -1038,8 +1209,12 @@ function factorial(n) {
       <SCHEME>procedure</SCHEME>
       <JAVASCRIPT>function</JAVASCRIPT>
     </SPLITINLINE>
-    (which it finds by looking up the symbol <SCHEMEINLINE>+</SCHEMEINLINE> in
-    the environment) into
+    (which it finds by looking up the symbol
+    <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>+</SCHEMEINLINE></SCHEME>
+      <JAVASCRIPT><JAVASCRIPTINLINE>"+"</JAVASCRIPTINLINE></JAVASCRIPT>
+    </SPLITINLINE>
+    in the environment) into
     <SPLITINLINE>
       <SCHEME><SCHEMEINLINE>proc</SCHEMEINLINE>,</SCHEME>
       <JAVASCRIPT><JAVASCRIPTINLINE>fun</JAVASCRIPTINLINE>,</JAVASCRIPT>
@@ -1078,8 +1253,9 @@ function factorial(n) {
 	(assign val (op +) (reg val) (const 1))
       </SCHEME>
       <JAVASCRIPT>
-	assign("val", op("lookup_symbol_value"), constant("a"), reg("env")),
-	assign("val", op("+"), reg("val"), constant(1)),
+assign("val", list(op("lookup_symbol_value"), 
+                   constant("a"), reg("env")),
+assign("val", list(op("+"), reg("val"), constant(1))
       </JAVASCRIPT>
     </SNIPPET>
     In this exercise we will extend our compiler to support open coding of
@@ -1109,30 +1285,53 @@ function factorial(n) {
       <SCHEME>procedure</SCHEME>
       <JAVASCRIPT>function</JAVASCRIPT>
     </SPLITINLINE>
-    to recognize the names of these primitives in addition to the 
-    <INDEX>reserved words</INDEX>
-    reserved words (the special forms) it currently recognizes.<FOOTNOTE>Making
-    the primitives into reserved words is in general a bad idea, since a user
-    cannot then rebind these names to different
+    to recognize the names of these primitives in addition to the
     <SPLITINLINE>
-      <SCHEME>procedures.</SCHEME>
-      <JAVASCRIPT>functions.</JAVASCRIPT>
+      <SCHEME>
+	<INDEX>reserved words</INDEX>
+	reserved words (the special forms)
+	it currently recognizes.<FOOTNOTE>Making
+	the primitives into reserved words is in general a bad idea, since a user
+	cannot then rebind these names to different
+	<SPLITINLINE>
+	  <SCHEME>procedures.</SCHEME>
+	  <JAVASCRIPT>functions.</JAVASCRIPT>
+	</SPLITINLINE>
+	Moreover, if we add reserved words to
+	a compiler that is in use, existing programs that define
+	<SPLITINLINE>
+	  <SCHEME>procedures</SCHEME>
+	  <JAVASCRIPT>functions</JAVASCRIPT>
+	</SPLITINLINE>
+	with these names will stop working.  See
+	exercise<SPACE/><REF NAME="ex:cte-open-code"/> for ideas on how to avoid
+	this problem.</FOOTNOTE>
+      </SCHEME>
+      <JAVASCRIPT>
+	syntactic forms it currently recognizes.
+      </JAVASCRIPT>
     </SPLITINLINE>
-    Moreover, if we add reserved words to
-    a compiler that is in use, existing programs that define
+    For each
     <SPLITINLINE>
-      <SCHEME>procedures</SCHEME>
-      <JAVASCRIPT>functions</JAVASCRIPT>
+      <SCHEME>special</SCHEME>
+      <JAVASCRIPT>syntactic</JAVASCRIPT>
     </SPLITINLINE>
-    with these names will stop working.  See
-    exercise<SPACE/><REF NAME="ex:cte-open-code"/> for ideas on how to avoid
-    this problem.</FOOTNOTE> For each special form our compiler has a code
+    form our compiler has a code
     generator.  In this exercise we will construct a family of code generators
     for the open-coded primitives.
     <OL>
       <LI>
-	The open-coded primitives, unlike the special forms, all need their
-	operands evaluated.  Write a code generator
+	The open-coded primitives, unlike the
+	<SPLITINLINE>
+	  <SCHEME>special</SCHEME>
+	  <JAVASCRIPT>syntactic</JAVASCRIPT>
+	</SPLITINLINE>
+	forms, all need their
+	<SPLITINLINE>
+	  <SCHEME>operands</SCHEME>
+	  <JAVASCRIPT>arguments</JAVASCRIPT>
+	</SPLITINLINE>
+	evaluated.  Write a code generator
 	<SPLITINLINE>
 	  <SCHEME><SCHEMEINLINE>spread-arguments</SCHEMEINLINE></SCHEME>
 	  <JAVASCRIPT><JAVASCRIPTINLINE>spread_arguments</JAVASCRIPTINLINE>
@@ -1141,42 +1340,100 @@ function factorial(n) {
 	for use by all the open-coding code generators.
 	<SPLITINLINE>
 	  <SCHEME><SCHEMEINLINE>Spread-arguments</SCHEMEINLINE></SCHEME>
-	  <JAVASCRIPT><JAVASCRIPTINLINE>Spread_arguments</JAVASCRIPTINLINE>
+	  <JAVASCRIPT>
+	    The function
+	    <JAVASCRIPTINLINE>spread_arguments</JAVASCRIPTINLINE>
 	  </JAVASCRIPT>
 	</SPLITINLINE>
-	should take an operand list and compile the given operands targeted to
-	successive argument registers.  Note that an operand may contain a call
+	should take an
+	<SPLITINLINE>
+	  <SCHEME>operand</SCHEME>
+	  <JAVASCRIPT>argument</JAVASCRIPT>
+	</SPLITINLINE>
+	list and compile the given
+	<SPLITINLINE>
+	  <SCHEME>operands</SCHEME>
+	  <JAVASCRIPT>arguments</JAVASCRIPT>
+	</SPLITINLINE>
+	targeted to
+	successive argument registers.  Note that an
+	<SPLITINLINE>
+	  <SCHEME>operand</SCHEME>
+	  <JAVASCRIPT>argument</JAVASCRIPT>
+	</SPLITINLINE>
+	may contain a call
 	to an open-coded primitive, so argument registers will have to be
-	preserved during operand evaluation.
+	preserved during
+	<SPLITINLINE>
+	  <SCHEME>operand</SCHEME>
+	  <JAVASCRIPT>argument</JAVASCRIPT>
+	</SPLITINLINE>
+	evaluation.
       </LI>
       <LI>
+	<SPLIT>
+	  <JAVASCRIPT>
+	    The JavaScript operators 
+	    <JAVASCRIPTINLINE>===</JAVASCRIPTINLINE>,
+	    <SCHEMEINLINE>*</SCHEMEINLINE>,
+	    <SCHEMEINLINE>-</SCHEMEINLINE>, and <SCHEMEINLINE>+</SCHEMEINLINE>,
+	    among others, are implemented in the register machine as
+	    primitive functions, and referred to in the global environment
+	    with the symbols
+	    <JAVASCRIPTINLINE>"==="</JAVASCRIPTINLINE>,
+	    <SCHEMEINLINE>"*"</SCHEMEINLINE>,
+	    <SCHEMEINLINE>"-"</SCHEMEINLINE>, and
+	    <SCHEMEINLINE>"+"</SCHEMEINLINE>. In JavaScript, it is 
+	    not possible to re-declare these names, because they do not
+	    meet the syntactic restrictions for names. This means it is safe
+	    to open-code them.
+	  </JAVASCRIPT>
+	</SPLIT>
 	For each of the primitive
 	<SPLITINLINE>
 	  <SCHEME>procedures</SCHEME>
 	  <JAVASCRIPT>functions</JAVASCRIPT>
 	</SPLITINLINE>
-	<SCHEMEINLINE>=</SCHEMEINLINE>, <SCHEMEINLINE>*</SCHEMEINLINE>,
+	<SPLITINLINE>
+	  <SCHEME><SCHEMEINLINE>=</SCHEMEINLINE>,</SCHEME>
+	  <JAVASCRIPT><JAVASCRIPTINLINE>===</JAVASCRIPTINLINE>,</JAVASCRIPT>
+	</SPLITINLINE>
+	<SCHEMEINLINE>*</SCHEMEINLINE>,
 	<SCHEMEINLINE>-</SCHEMEINLINE>, and <SCHEMEINLINE>+</SCHEMEINLINE>,
-	write a code generator that takes a combination with that
-	operator, together with a target and a linkage descriptor, and
+	write a code generator that takes 
+	<SPLITINLINE>
+	  <SCHEME>a combination with that operator,
+	  </SCHEME>
+	  <JAVASCRIPT>an application with a function expression that
+	  names that function,
+	  </JAVASCRIPT>
+	</SPLITINLINE>
+	together with a target and a linkage descriptor, and
 	produces code to spread the arguments into the registers and then
 	perform the operation targeted to the given target with the given
-	linkage.  You need only handle expressions with two operands.  Make
-	<SCHEMEINLINE>compile</SCHEMEINLINE> dispatch to these code generators.
+	linkage.
+	<SPLITINLINE>
+	  <SCHEME>You need only handle expressions with two operands.</SCHEME>
+	</SPLITINLINE>
+	Make <SCHEMEINLINE>compile</SCHEMEINLINE> dispatch to these code
+	generators.
       </LI>
       <LI>
 	Try your new compiler on the <SCHEMEINLINE>factorial</SCHEMEINLINE>
 	example.  Compare the resulting code with the result produced without
 	open coding.
       </LI>
-      <LI>
-	Extend your code generators for <SCHEMEINLINE>+</SCHEMEINLINE> and
-	<SCHEMEINLINE>*</SCHEMEINLINE> so that they
-	can handle expressions with arbitrary numbers of operands.  An
-	expression with more than two operands will have to be compiled into a
-	sequence of operations, each with only two inputs.
-	<LABEL NAME="ex:open-code"/>
-      </LI>
+      <SPLIT>
+	<SCHEME>
+	  <LI>
+	    Extend your code generators for <SCHEMEINLINE>+</SCHEMEINLINE> and
+	    <SCHEMEINLINE>*</SCHEMEINLINE> so that they
+	    can handle expressions with arbitrary numbers of operands.  An
+	    expression with more than two operands will have to be compiled into a
+	    sequence of operations, each with only two inputs.
+	  </LI>
+	</SCHEME>
+      </SPLIT>
     </OL>
   </EXERCISE>
 </SUBSECTION>

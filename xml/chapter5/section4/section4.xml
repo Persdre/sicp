@@ -170,15 +170,11 @@
     evaluator register machine includes a stack and seven
     registers:
     <SPLITINLINE>
-      <SCHEME>
-	<SCHEMEINLINE>exp</SCHEMEINLINE>,
-      </SCHEME>
-      <JAVASCRIPT>
-	<SCHEMEINLINE>stmt</SCHEMEINLINE>,
-      </JAVASCRIPT>
+      <SCHEME> <SCHEMEINLINE>exp</SCHEMEINLINE>, </SCHEME>
+      <JAVASCRIPT> <SCHEMEINLINE>stmt</SCHEMEINLINE>, </JAVASCRIPT>
     </SPLITINLINE>
     <SCHEMEINLINE>env</SCHEMEINLINE>,
-    <SCHEMEINLINE>val</SCHEMEINLINE>, <LATEXINLINE>$\texttt{continue}$</LATEXINLINE>,
+    <SCHEMEINLINE>val</SCHEMEINLINE>, <SCHEMEINLINE>continue</SCHEMEINLINE>,
     <SPLITINLINE>
       <SCHEME>
 	<SCHEMEINLINE>proc</SCHEMEINLINE>,
@@ -188,7 +184,9 @@
       </JAVASCRIPT>
     </SPLITINLINE>
     <SCHEMEINLINE>argl</SCHEMEINLINE>, and <SCHEMEINLINE>unev</SCHEMEINLINE>.
-    <SCHEMEINLINE>Exp</SCHEMEINLINE>
+    <SPLITINLINE>
+      <SCHEME><SCHEMEINLINE>Exp</SCHEMEINLINE></SCHEME>
+      <JAVASCRIPT>The <JAVASCRIPTINLINE>stmt</JAVASCRIPTINLINE> register</JAVASCRIPT>
     is used to hold the
     <SPLITINLINE>
       <SCHEME>
@@ -202,7 +200,7 @@
     environment in which the evaluation is to be performed.  At the end of an
     evaluation, <SCHEMEINLINE>val</SCHEMEINLINE> contains the value obtained by
     evaluating the expression in the designated environment.  The
-    <LATEXINLINE>$\texttt{continue}$</LATEXINLINE> register is used to implement
+    <SCHEMEINLINE>continue</SCHEMEINLINE> register is used to implement
     recursion, as explained in section<SPACE/><REF NAME="sec:stack-recursion"/>.
     (The evaluator needs to call itself recursively, since evaluating an
     expression requires evaluating its subexpressions.)  The registers

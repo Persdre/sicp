@@ -15,7 +15,8 @@
     We started with the relatively informal substitution model, then
     extended this in chapter<SPACE/>3 to the environment model, which enabled us
     to deal with state and change.  In the metacircular evaluator of
-    chapter<SPACE/>4, we used Scheme itself as a language for making more
+    chapter<SPACE/>4, we used <SPLITINLINE><SCHEME>Scheme</SCHEME><JAVASCRIPT>JavaScript</JAVASCRIPT></SPLITINLINE>
+    itself as a language for making more
     explicit the environment structure constructed during evaluation of an
     expression.  Now, with register machines, we have taken a close look
     at the evaluator<APOS/>s mechanisms for storage management,
@@ -42,16 +43,37 @@
       <SCHEME>procedure</SCHEME>
       <JAVASCRIPT>function</JAVASCRIPT>
     </SPLITINLINE>
-    of section<SPACE/><REF NAME="sec:running-eval"/>.  The evaluator will
-    repeatedly print a prompt, read an expression, evaluate the expression by
-    going to
+    of section<SPACE/><REF NAME="sec:running-eval"/> and similarly extends
+    the current program environment in each iteration of the loop.  The evaluator
+    will repeatedly print a prompt, read 
+    <SPLITINLINE>
+      <SCHEME>an expression, </SCHEME>
+      <JAVASCRIPT>a program, scan its declarations and appropriately extend the environment
+      before proceeding to </JAVASCRIPT>
+    </SPLITINLINE>
+    evaluate
+    <SPLITINLINE>
+      <SCHEME>the expression</SCHEME>
+      <JAVASCRIPT>the program</JAVASCRIPT>
+    </SPLITINLINE>
+    by going to
     <SPLITINLINE>
       <SCHEME><SCHEMEINLINE>eval-dispatch</SCHEMEINLINE>,</SCHEME>
       <JAVASCRIPT><JAVASCRIPTINLINE>eval_dispatch</JAVASCRIPTINLINE>,
     </JAVASCRIPT></SPLITINLINE>
-    and print the result.  The following instructions form the beginning of the
+    and print the result.
+    The following instructions form the beginning of the
     explicit-control evaluator<APOS/>s controller sequence:<FOOTNOTE>We assume
-    here that <SCHEMEINLINE>read</SCHEMEINLINE> and the various printing
+    here that
+    <SPLITINLINE>
+      <SCHEME>
+	<SCHEMEINLINE>read</SCHEMEINLINE>
+      </SCHEME>
+      <JAVASCRIPT>
+	<JAVASCRIPTINLINE>prompt_for_input</JAVASCRIPTINLINE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    and the various printing
     operations are available as primitive machine operations, which is useful
     for our simulation, but completely unrealistic in practice.  These are
     actually extremely complex operations.  In practice, they would be
@@ -60,11 +82,14 @@
     <P/>
     To support the
     <SPLITINLINE>
-      <SCHEME><SCHEMEINLINE>get-global-environment</SCHEMEINLINE></SCHEME>
-      <JAVASCRIPT><JAVASCRIPTINLINE>get_global_environment</JAVASCRIPTINLINE>
+      <SCHEME><SCHEMEINLINE>get-global-environment</SCHEMEINLINE> operation
+      </SCHEME>
+      <JAVASCRIPT>
+	<JAVASCRIPTINLINE>get_program_environment</JAVASCRIPTINLINE> and
+	<JAVASCRIPTINLINE>set_program_environment</JAVASCRIPTINLINE> operations
       </JAVASCRIPT>
     </SPLITINLINE>
-    operation we define
+    we define
     <!--  \indcode*{the-global-environment} -->
     <!--  \indcode*{get-global-environment} -->
     <SNIPPET EVAL="no">
@@ -76,8 +101,11 @@
     the-global-environment)
       </SCHEME>
       <JAVASCRIPT>
-function get_global_environment() {
+function get_program_environment() {
     return the_global_environment;
+}
+function set_program_environment(env) {
+    the_global_environment = env;
 }
       </JAVASCRIPT>
     </SNIPPET></FOOTNOTE>
@@ -102,18 +130,25 @@ function get_global_environment() {
       </SCHEME>
       <JAVASCRIPT>
 "read_eval_print_loop",
-      assign("exp", list(op("prompt_for_input"), 
-                         constant("/// EC_Eval input:"))),
-      assign("env", list(op("get_global_environment"))),
-      assign("continue", label("print_result")),
-      go_to(label("eval_dispatch")),
+  perform(list(op("initialize_stack"))),
+  assign("stmt", list(op("prompt_for_input"),
+                      constant("EC-evaluate input:"))),
+  assign("env", list(op("get_program_environment"))),
+  assign("val", list(op("scan_out_declarations"), reg("stmt"))),
+  save("stmt"), // temporarily store to stmt
+  assign("stmt", list(op("list_of_unassigned"), reg("val"))),
+  assign("env", list(op("extend_environment"), 
+                     reg("val"), reg("stmt"), reg("env"))),
+  perform(list(op("set_program_environment"), reg("env"))),
+  restore("stmt"),
+  assign("continue", label("print_result")),
+  go_to(label("eval_dispatch")),
 
 "print_result",
-      perform(list(op("user_print"), 
-                   constant("EC_Eval value:"), 
-                   reg("val"))),
-      go_to(label("read_eval_print_loop")), 
-      </JAVASCRIPT>
+  perform(list(op("user_print"),
+               constant("EC-evaluate value:"), reg("val"))),
+  go_to(label("read_eval_print_loop")), 
+  </JAVASCRIPT>
     </SNIPPET>
   </TEXT>
 
@@ -162,17 +197,17 @@ function get_global_environment() {
       <JAVASCRIPT>
 "unknown_expression_type",
       assign("val", constant("unknown_expression_type_error")),
-      assign("val", reg("exp")),
       go_to(label("signal_error")),
       
-"unknown_procedure_type",
-      restore("continue"), 
-      assign("val", constant("unknown_procedure_type_error")),
+"unknown_function_type",
+      restore("continue"), /// clean up stack (from apply_dispatch)
+      assign("val", constant("unknown_function_type_error")),
       go_to(label("signal_error")),
       
 "signal_error",
-      perform(list(op("user_print"), constant("EC_eval error:"), reg("val"))),
-      go_to(label("evaluator_done")),
+      perform(list(op("user_print"),
+                   constant("EC_eval error:"), reg("val"))),
+      go_to(label("read_eval_print_loop")),
       </JAVASCRIPT>
     </SNIPPET>
   </TEXT>
@@ -180,7 +215,15 @@ function get_global_environment() {
   <TEXT>
     For the purposes of the simulation, we initialize the stack each time
     through the driver loop, since it might not be empty after an error
-    (such as an undefined variable) interrupts an evaluation.<FOOTNOTE>We
+    <SPLITINLINE>
+      <SCHEME>
+	(such as an undefined variable)
+      </SCHEME>
+      <JAVASCRIPT>
+	(such as an undeclared name)
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    interrupts an evaluation.<FOOTNOTE>We
     could perform the stack initialization only after errors, but doing it in
     the driver loop will be convenient for monitoring the evaluator<APOS/>s
     performance, as described below.</FOOTNOTE>
@@ -196,7 +239,7 @@ function get_global_environment() {
     we can create an evaluator machine model that we can run using the
     register-machine simulator of section<SPACE/><REF NAME="sec:simulator"/>.
 
-    <SNIPPET EVAL="no">
+    <SNIPPET EVAL="no" LATEX="yes">
       <SCHEME>
       (define eceval
       (make-machine
@@ -208,22 +251,339 @@ function get_global_environment() {
       )))
       </SCHEME>
       <JAVASCRIPT>
-function eceval() {
-    return make_machine(list("stmt", "env", "val", "fun", "argl", "continue", "unev")
-                        eceval_operations,
-                        list(read_eval_print_loop,
-                             ... /* entire machine controller as given above */ 
-                             ));
-}                       
+const eceval = 
+    make_machine(list("stmt", "env", "val", "fun",
+                      "argl", "continue", "unev"),
+                 eceval_operations,
+                 list("read_eval_print_loop",
+                      $\langle entire$ $machine$ $controller$ $as$ $given$ $above \rangle$
+                     ));
+      </JAVASCRIPT>
+    </SNIPPET>
+    <SNIPPET HIDE="yes">
+      <NAME>eceval</NAME>
+      <REQUIRES>functions_4_1_1</REQUIRES>
+      <REQUIRES>functions_4_1_2</REQUIRES>
+      <REQUIRES>functions_4_1_3</REQUIRES>
+      <REQUIRES>functions_4_1_4</REQUIRES>
+      <REQUIRES>user_print</REQUIRES>
+      <REQUIRES>the_global</REQUIRES>
+      <REQUIRES>make_machine</REQUIRES>
+      <REQUIRES>start</REQUIRES>
+      <REQUIRES>eceval_operations</REQUIRES>
+      <REQUIRES>eceval_controller</REQUIRES>
+      <JAVASCRIPT>
+const eceval =
+    make_machine(list("stmt", "env", "val", "fun",
+                      "argl", "continue", "unev"),
+                 eceval_operations,
+                 eceval_controller);
+      </JAVASCRIPT>
+    </SNIPPET>
+    <SNIPPET HIDE="yes">
+      <NAME>eceval_controller</NAME>
+      <JAVASCRIPT>
+const eceval_controller =	
+    list(
+      "read_eval_print_loop",
+      perform(list(op("initialize_stack"))),
+      assign("stmt", list(op("prompt_for_input"),
+                          constant("EC-evaluate input:"))),
+      assign("env", list(op("get_program_environment"))),
+      assign("val", list(op("scan_out_declarations"), reg("stmt"))),
+      save("stmt"), // temporarily store to stmt
+      assign("stmt", list(op("list_of_unassigned"), reg("val"))),
+      assign("env", list(op("extend_environment"), 
+                         reg("val"), reg("stmt"), reg("env"))),
+      perform(list(op("set_program_environment"), reg("env"))),
+      restore("stmt"),
+      assign("continue", label("print_result")),
+      go_to(label("eval_dispatch")),
+
+      "print_result",
+      perform(list(op("user_print"),
+                   constant("EC-evaluate value:"), reg("val"))),
+      // to avoid infinite REPL
+      go_to(label("evaluator_done")),
+      //go_to(label("read_eval_print_loop")), 
+
+      "eval_dispatch",
+      test(list(op("is_self_evaluating"),
+                reg("stmt"))),
+      branch(label("ev_self_eval")),
+      test(list(op("is_name"), reg("stmt"))),
+      branch(label("ev_name")),
+      // Treat let/const the same
+      test(list(op("is_variable_declaration"),
+                reg("stmt"))),
+      branch(label("ev_variable_declaration")),
+      test(list(op("is_constant_declaration"),
+                reg("stmt"))),
+      branch(label("ev_constant_declaration")),
+      test(list(op("is_assignment"), reg("stmt"))),
+      branch(label("ev_assignment")),
+      test(list(op("is_return_statement"),
+                reg("stmt"))),
+      branch(label("ev_return")),
+      test(list(op("is_conditional_expression"),
+                reg("stmt"))),
+      branch(label("ev_cond")),
+      test(list(op("is_lambda_expression"),
+                reg("stmt"))),
+      branch(label("ev_lambda")),
+      test(list(op("is_sequence"), reg("stmt"))),
+      branch(label("ev_seq")),
+      test(list(op("is_block"), reg("stmt"))),
+      branch(label("ev_block")),
+      test(list(op("is_application"), reg("stmt"))),
+      branch(label("ev_application")),
+      go_to(label("unknown_expression_type")),
+
+      "ev_return_from_seq",
+      restore("continue"),
+
+      "ev_return",
+      assign("stmt", list(op("return_expression"), reg("stmt"))),
+      go_to(label("eval_dispatch")),
+        
+      "ev_self_eval",
+      assign("val", reg("stmt")),
+      go_to(reg("continue")),
+      
+      "ev_name",
+      assign("val",
+        list(op("lookup_symbol_value"), reg("stmt"), reg("env"))),
+      go_to(reg("continue")),
+      
+      "ev_lambda",
+      assign("unev", list(op("lambda_parameters"), reg("stmt"))),
+      assign("stmt", list(op("lambda_body"), reg("stmt"))),
+      assign("val", list(op("make_function"),
+                         reg("unev"), reg("stmt"), reg("env"))),
+      go_to(reg("continue")),
+      
+      "ev_application",
+      save("continue"),
+      save("env"),
+      assign("unev", list(op("args"), reg("stmt"))),
+      save("unev"),
+      assign("stmt", list(op("function_expression"), reg("stmt"))),
+      assign("continue", label("ev_appl_did_function_expression")),
+      go_to(label("eval_dispatch")),
+      
+      "ev_appl_did_function_expression",
+      restore("unev"), // the args
+      restore("env"),
+      assign("argl", list(op("empty_arglist"))),
+      assign("fun", reg("val")), // the function_expression
+      test(list(op("has_no_argument_expressions"),
+                reg("unev"))),
+      branch(label("apply_dispatch")),
+      save("fun"),
+      
+      "ev_appl_argument_expression_loop",
+      save("argl"),
+      assign("stmt", list(op("first_arg"), reg("unev"))),
+      test(list(op("is_last_argument_expression"),
+                reg("unev"))),
+      branch(label("ev_appl_last_arg")),
+      save("env"),
+      save("unev"),
+      assign("continue", label("ev_appl_accumulate_arg")),
+      go_to(label("eval_dispatch")),
+      
+      "ev_appl_accumulate_arg",
+      restore("unev"),
+      restore("env"),
+      restore("argl"),
+      assign("argl", list(op("adjoin_arg"),
+                          reg("val"), reg("argl"))),
+      assign("unev", list(op("rest_args"), reg("unev"))),
+      go_to(label("ev_appl_argument_expression_loop")),
+      
+      "ev_appl_last_arg",
+      assign("continue", label("ev_appl_accum_last_arg")),
+      go_to(label("eval_dispatch")),
+      
+      "ev_appl_accum_last_arg",
+      restore("argl"),
+      assign("argl", list(op("adjoin_arg"),
+                          reg("val"), reg("argl"))),
+      restore("fun"),
+      go_to(label("apply_dispatch")),
+      
+      "apply_dispatch",
+      test(list(op("is_primitive_function"),
+                reg("fun"))),
+      branch(label("primitive_apply")),
+      test(list(op("is_compound_function"),
+                reg("fun"))),
+      branch(label("compound_apply")),
+      go_to(label("unknown_function_type")),
+
+      "primitive_apply",
+      assign("val", list(op("apply_primitive_function"), 
+                         reg("fun"), 
+                         reg("argl"))),
+      restore("continue"),
+      go_to(reg("continue")),
+      
+      "compound_apply",
+      assign("unev", list(op("function_parameters"), reg("fun"))),
+      assign("env", list(op("function_environment"), reg("fun"))),
+      assign("env", list(op("extend_environment"), 
+                         reg("unev"), reg("argl"), reg("env"))),
+      assign("stmt", list(op("function_body"), reg("fun"))),
+
+      test(list(op("does_not_handle_return"), reg("stmt"))),
+      branch(label("no_return_wrapping")),
+      restore("continue"),
+      go_to(label("eval_dispatch")),
+
+      "no_return_wrapping",
+      assign("continue", label("end_without_return")),
+      go_to(label("eval_dispatch")),
+   
+      "ev_seq",
+      save("continue"),
+      assign("unev", list(op("sequence_statements"), reg("stmt"))),
+
+      "ev_sequence",
+      assign("stmt", list(op("first_statement"), reg("unev"))),
+      test(list(op("is_return_statement"), reg("stmt"))),
+      branch(label("ev_return_from_seq")),
+      test(list(op("is_last_statement"), reg("unev"))),
+      branch(label("ev_sequence_last_exp")),
+      save("unev"),
+      save("env"),
+      assign("continue", label("ev_sequence_continue")),
+      go_to(label("eval_dispatch")),
+      
+      "ev_sequence_continue",
+      restore("env"),
+      restore("unev"),
+      assign("unev", list(op("rest_statements"), reg("unev"))),
+      go_to(label("ev_sequence")),
+      
+      "ev_sequence_last_exp",
+      assign("continue", label("end_without_return")),
+      go_to(label("eval_dispatch")),
+
+      "end_without_return",
+      assign("val", constant(undefined)),
+      restore("continue"),
+      go_to(reg("continue")),
+        
+      "ev_block",
+      assign("stmt", list(op("block_body"), reg("stmt"))),
+      assign("val", list(op("scan_out_declarations"), reg("stmt"))),
+
+      save("stmt"), // temporarily store to stmt
+      assign("stmt", list(op("list_of_unassigned"), reg("val"))),
+      assign("env", list(op("extend_environment"), 
+                         reg("val"), 
+                         reg("stmt"), 
+                         reg("env"))),
+      restore("stmt"),
+      go_to(label("eval_dispatch")),
+      
+      "ev_cond",
+      save("stmt"), // save expression for later
+      save("env"),
+      save("continue"),
+      assign("continue", label("ev_cond_decide")),
+      assign("stmt", list(op("conditional_pred"), reg("stmt"))),
+      go_to(label("eval_dispatch")), // evaluate the predicate
+      
+      "ev_cond_decide",
+      restore("continue"),
+      restore("env"),
+      restore("stmt"),
+      test(list(op("is_true"), reg("val"))),
+      branch(label("ev_cond_consequent")),
+      
+      "ev_cond_alternative",
+      assign("stmt", list(op("conditional_alt"), reg("stmt"))),
+      go_to(label("eval_dispatch")),
+      
+      "ev_cond_consequent",
+      assign("stmt", list(op("conditional_cons"), reg("stmt"))),
+      go_to(label("eval_dispatch")),
+      
+      "ev_assignment",
+      assign("unev", list(op("assignment_symbol"), reg("stmt"))),
+      save("unev"), // save variable for later
+      assign("stmt", list(op("assignment_value"), reg("stmt"))),
+      save("env"),
+      save("continue"),
+      assign("continue", label("ev_assignment_1")),
+      go_to(label("eval_dispatch")), // evaluate assignment value
+      
+      "ev_assignment_1",
+      restore("continue"),
+      restore("env"),
+      restore("unev"),
+      perform(list(op("assign_symbol_value"),
+                   reg("unev"), reg("val"), reg("env"))),
+      go_to(reg("continue")),
+      
+      "ev_variable_declaration",
+      assign("unev", list(op("variable_declaration_symbol"),
+                          reg("stmt"))),
+      save("unev"), // save variable for later
+      assign("stmt", list(op("variable_declaration_value"),
+                          reg("stmt"))),
+      save("env"),
+      save("continue"),
+      assign("continue", label("ev_declaration")),
+      go_to(label("eval_dispatch")), // evaluate declaration value
+      
+      "ev_declaration",
+      restore("continue"),
+      restore("env"),
+      restore("unev"),
+      perform(list(op("assign_symbol_value"),
+                   reg("unev"), reg("val"), reg("env"))),
+      assign("val", constant(undefined)),
+      go_to(reg("continue")),
+      
+      "ev_constant_declaration",
+      assign("unev", list(op("constant_declaration_symbol"),
+                          reg("stmt"))),
+      save("unev"), // save constant for later
+      assign("stmt", list(op("constant_declaration_value"),
+                          reg("stmt"))),
+      save("env"),
+      save("continue"),
+      assign("continue", label("ev_declaration")),
+      go_to(label("eval_dispatch")), // evaluate declaration value
+      
+      // Error handling
+      "unknown_expression_type",
+      assign("val", constant("unknown_expression_type_error")),
+      go_to(label("signal_error")),
+      
+      "unknown_function_type",
+      restore("continue"), /// clean up stack (from apply_dispatch)
+      assign("val", constant("unknown_function_type_error")),
+      go_to(label("signal_error")),
+      
+      "signal_error",
+      perform(list(op("user_print"),
+                   constant("EC_eval error:"), reg("val"))),
+      go_to(label("read_eval_print_loop")),
+      
+      "evaluator_done"
+     );
       </JAVASCRIPT>
     </SNIPPET>
   </TEXT>
 
   <TEXT>
-    We must define Scheme
+    We must define 
     <SPLITINLINE>
-      <SCHEME>procedures</SCHEME>
-      <JAVASCRIPT>functions</JAVASCRIPT>
+      <SCHEME>Scheme procedures</SCHEME>
+      <JAVASCRIPT>JavaScript functions</JAVASCRIPT>
     </SPLITINLINE>
     to simulate the operations used as primitives by the evaluator.  These are
     the same
@@ -243,195 +603,21 @@ function eceval() {
       <JAVASCRIPT>
 const eceval_operations = 
     list(list("is_self_evaluating", is_self_evaluating),
-         $\textit{complete list of operations for eceval machine}$
-        );
+         $\langle complete$ $list$ $of$ $operations$ $for$ $eceval$ $machine\rangle$);
       </JAVASCRIPT>
     </SNIPPET>
-  </TEXT>
-
-  <TEXT>
-    Finally, we can initialize the global environment and run the evaluator:
-    <SNIPPET>
-      <NAME>ec_eval_all</NAME>
-      <REQUIRES>functions_4_1_1</REQUIRES>
-      <REQUIRES>functions_4_1_2</REQUIRES>
-      <REQUIRES>functions_4_1_3</REQUIRES>
-      <REQUIRES>functions_4_1_4</REQUIRES>
-      <REQUIRES>user_print</REQUIRES>
-      <REQUIRES>the_global</REQUIRES>
-      <REQUIRES>make_machine</REQUIRES>
-      <REQUIRES>start</REQUIRES>
-      <SCHEME>
-      (define the-global-environment (setup-environment))
-
-      (start eceval)
-      </SCHEME>
-      <SCHEMEOUTPUT>
-;;; EC-Eval input:
-(define (append x y)
-(if (null? x)
-y
-(cons (car x)
-    (append (cdr x) y))))
-;;; EC-Eval value:
-ok
-
-;;; EC-Eval input:
-(append '(a b c) '(d e f))
-;;; EC-Eval value:
-(a b c d e f)
-      </SCHEMEOUTPUT>
-      <JAVASCRIPT_RUN>
-const no_value_yet = () => null;
-
-function make_compound_function(parameters, body, env) {
-  return list("compound_function", parameters, make_block(body), env);
-}
-
-// The function local_names collects all names declared in the
-// body statements. For a name to be included in the list of
-// local_names, it needs to be declared outside of any other
-// block or function.
-
-function insert_all(xs, ys) {
-  return is_null(xs)
-    ? ys
-    : is_null(member(head(xs), ys))
-    ? pair(head(xs), insert_all(tail(xs), ys))
-    : error(head(xs), "multiple declarations of: ");
-}
-
-function local_names(stmt) {
-  if (is_sequence(stmt)) {
-    const stmts = sequence_statements(stmt);
-    return is_empty_sequence(stmts)
-      ? null
-      : insert_all(
-          local_names(first_statement(stmts)),
-          local_names(make_sequence(rest_statements(stmts)))
-        );
-  } else {
-    return is_constant_declaration(stmt)
-      ? list(constant_declaration_symbol(stmt))
-      : is_variable_declaration(stmt)
-      ? list(variable_declaration_symbol(stmt))
-      : null;
-  }
-}
-
-function is_empty_environment(env) {
-  return is_null(env);
-}
-
-/* THE GLOBAL ENVIRONMENT */
-
-// the minus operation is overloaded to
-// support both binary minus and unary minus
-
-function minus(x, y) {
-  if (is_number(x) && is_number(y)) {
-    return x - y;
-  } else {
-    return -x;
-  }
-}
-
-// the global environment has bindings for all
-// primitive functions, including the operators
-
-
-// Global registers
-let the_heads = [];
-let the_tails = [];
-let free = 0;
-
-const POINTER_TAG = 800;
-const NUMBER_TAG = 801;
-const STRING_TAG = 802;
-const NULL_TAG = -1;
-
-/// Pairs implemented using vectors of heads and tails as in 5.3
-
-function head_(n) {
-  return vector_ref(the_heads, n);
-}
-
-function tail_(n) {
-  return vector_ref(the_tails, n);
-}
-
-function vector_ref(xs, index) {
-  return xs[index];
-}
-
-function vector_set(xs, index, value) {
-  xs[index] = value;
-  return undefined;
-}
-
-function pair_(a, b) {
-  // perform(list(op("vector_set"), reg("the_heads"), reg("free"), a));
-  // perform(list(op("vector_set"), reg("the_tails"), reg("free"), b));
-  // assign("free", list(op("+"), reg("free"), constant(1)));
-  // display(is_number(a), "is_number");
-
-  const ret = free;
-  vector_set(the_heads, free, a);
-  vector_set(the_tails, free, b);
-
-  free = free + 1;
-  return ret;
-}
-
-function binary_function(f) {
-  // f is binary
-  return (arg_list) =>
-    is_list(arg_list) && length(arg_list) === 2
-      ? apply_in_underlying_javascript(f, arg_list)
-      : error(
-          arg_list,
-          "Incorrect number of arguments passed to binary function "
-        );
-}
-
-function eceval() {
-  return make_machine(
+    <SNIPPET HIDE="yes">
+      <NAME>eceval_operations</NAME>
+      <JAVASCRIPT>
+const eceval_operations = 
     list(
-      "exp",
-      "env",
-      "val",
-      "continue",
-      "proc",
-      "argl",
-      "unev",
-      "fun",
-      "retval"
-    ),
-    list(
-      // basic functions
-      list(
-        "rem",
-        binary_function((a, b) => a % b)
-      ),
-      list(
-        "=",
-        binary_function((a, b) => a === b)
-      ),
-      list(
-        "+",
-        binary_function((a, b) => a + b)
-      ),
-      list(
-        "===",
-        binary_function((a, b) => a === b)
-      ),
       // args
       list("args"                , args),
       list("function_expression" , function_expression),
-      list("has_no_operands"     , no_args),
+      list("has_no_argument_expressions"     , no_args),
       list("first_arg"           , first_arg),
       list(
-        "is_last_operand",
+        "is_last_argument_expression",
         (a) => is_null(tail(a))
       ),
       list("rest_args", rest_args),
@@ -446,7 +632,7 @@ function eceval() {
         (val, argl) => append(argl, list(val))
       ),
 
-      // exp (sequence)
+      // stmt (sequence)
       list("first_statement"     , first_statement),
       list("rest_statements"     , rest_statements),
       list("is_last_statement"   , is_last_statement),
@@ -482,7 +668,7 @@ function eceval() {
         "variable_declaration_value",
         variable_declaration_value
       ),
-      list("declare_value"        , assign_symbol_value),
+      list("assign_symbol_value"  , assign_symbol_value),
       list("is_lambda_expression" , is_lambda_expression),
       list(
         "lambda_parameters",
@@ -490,8 +676,6 @@ function eceval() {
       ),
       list("lambda_body"         , lambda_body),
       list("is_return_statement" , is_return_statement),
-      list("should_return"       , v => v !== undefined &amp;&amp; v !== no_value_yet),
-      list("returned_value" , v => v !== no_value_yet),
       list("return_expression"   , return_expression),
       list(
         "is_conditional_expression",
@@ -505,11 +689,9 @@ function eceval() {
       list("make_sequence"    , make_sequence),
       list("is_block"         , is_block),
       list("block_body"       , block_body),
-      list("local_names"      , local_names),
-      list(
-        "get_temp_block_values",
-        (locals) => map((x) => no_value_yet, locals)
-      ),
+      list("scan_out_declarations"    , scan_out_declarations),
+      list("does_not_handle_return", s => !(is_block(s) || is_sequence(s) || is_return_statement(s))),
+      list("list_of_unassigned"       , list_of_unassigned),
       list("is_application"           , is_application),
       list("is_primitive_function"    , is_primitive_function),
       list("apply_primitive_function" , apply_primitive_function),
@@ -517,489 +699,121 @@ function eceval() {
       list("function_parameters"      , function_parameters),
       list("function_environment"     , function_environment),
       list("function_body"            , function_body),
-      list("insert_all"               , insert_all),
       list("extend_environment"       , extend_environment),
-      list("make_compound_function"   , make_compound_function),
+      list("make_function"            , make_function),
 
       list(
         "lookup_symbol_value",
         (stmt, env) => lookup_symbol_value(symbol_of_name(stmt), env)
       ),
       list("get_global_environment", get_global_environment),
+      list("set_global_environment", set_global_environment),
 
       // generic helpers
       list("is_true", is_true),
       list("is_null", is_null),
-      list(
-        "is_pair",
-        (a) => is_pair(a)
-      ),
-      list(
-        "is_number",
-        (a) => is_number(a)
-      ),
-      list(
-        "append",
-        (xs, ys) => append(xs, ys)
-      ),
-
-      list("vector_ref", vector_ref),
-      list("vector_set", vector_set),
-      list("pair", pair_),
+      list("is_pair", is_pair),
+      list("is_number", is_number),
+      list("append", append),
+      list("pair", pair),
 
       list("prompt_for_input", (s) => prompt_for_input(s)),
       list("user_print", user_print),
-      list("display", display)
-    ),
-    list(
-      assign("retval", constant(no_value_yet)),
-      assign("continue", label("evaluator_done")),
-      assign("env", list(op("get_global_environment"))),
-      "ev_begin",
-      
-      go_to(label("read_eval_print_loop")),
-      
-      "eval_dispatch",
-        test(list(op("should_return"), reg("retval"), constant(true))),
-        branch(label("install_return_value")),
+      list("display", display),
+      // list("make_compiled_function", make_compiled_function),
+      // list("compiled_function_env", compiled_function_env),
+      list("list", list)
+    );
+    </JAVASCRIPT>
+  </SNIPPET>
+  </TEXT>
 
-      test(list(op("is_self_evaluating"), reg("exp"), constant(true))),
-      branch(label("ev_self_eval")),
-
-      test(list(op("is_name"), reg("exp"), constant(true))),
-      branch(label("ev_name")),
-
-      // Treat let/const the same
-      test(list(op("is_variable_declaration"), reg("exp"), constant(true))),
-      branch(label("ev_variable_declaration")),
-      test(list(op("is_constant_declaration"), reg("exp"), constant(true))),
-      branch(label("ev_constant_declaration")),
-      test(list(op("is_assignment"), reg("exp"), constant(true))),
-      branch(label("ev_assignment")),
-
-      test(list(op("is_return_statement"), reg("exp"), constant(true))),
-      branch(label("ev_return")),
-
-      test(list(op("is_conditional_expression"), reg("exp"), constant(true))),
-      branch(label("ev_if")),
-      test(list(op("is_lambda_expression"), reg("exp"), constant(true))),
-      branch(label("ev_lambda")),
-      test(list(op("is_sequence"), reg("exp"), constant(true))),
-      branch(label("ev_seq")),
-      test(list(op("is_block"), reg("exp"), constant(true))),
-      branch(label("ev_block")),
-      test(list(op("is_application"), reg("exp"), constant(true))),
-      branch(label("ev_application")),
-      go_to(label("unknown_expression_type")),
-
-        "ev_return",
-          assign("exp", list(op("return_expression"), reg("exp"))),
-          save("continue"),
-          assign("continue", label("ev_return_2")),
-          go_to(label("eval_dispatch")),
   
-        "ev_return_2",
-          assign("retval", reg("val")),
-          restore("continue"),
-          go_to(reg("continue")),
-      
-      "ev_self_eval",
-      assign("val", reg("exp")),
-      go_to(reg("continue")),
-      
-      "ev_name",
-      assign("val", list(op("lookup_symbol_value"), reg("exp"), reg("env"))),
-      go_to(reg("continue")),
-      
-      "ev_lambda",
-      assign("unev", list(op("lambda_parameters"), reg("exp"))),
-      assign("exp", list(op("lambda_body"), reg("exp"))),
-      assign(
-      "val",
-      list(op("make_compound_function"), reg("unev"), reg("exp"), reg("env"))
-      ),
-      go_to(reg("continue")),
-      
-      "ev_application",
-      save("continue"),
-      save("env"),
-      assign("unev", list(op("args"), reg("exp"))),
-      save("unev"),
-      assign("exp", list(op("function_expression"), reg("exp"))),
-      assign("continue", label("ev_appl_did_operator")),
-      go_to(label("eval_dispatch")),
-      
-      "ev_appl_did_operator",
-      restore("unev"), // the args
-      restore("env"),
-      assign("argl", list(op("empty_arglist"))),
-      assign("fun", reg("val")), // the function_expression
-      test(list(op("has_no_operands"), reg("unev"), constant(true))),
-      branch(label("apply_dispatch")),
-      save("fun"),
-      
-      "ev_appl_operand_loop",
-      save("argl"),
-      assign("exp", list(op("first_arg"), reg("unev"))),
-      test(list(op("is_last_operand"), reg("unev"), constant(true))),
-      branch(label("ev_appl_last_arg")),
-      save("env"),
-      save("unev"),
-      assign("continue", label("ev_appl_accumulate_arg")),
-      go_to(label("eval_dispatch")),
-      
-      "ev_appl_accumulate_arg",
-      restore("unev"),
-      restore("env"),
-      restore("argl"),
-      assign("argl", list(op("adjoin_arg"), reg("val"), reg("argl"))),
-      assign("unev", list(op("rest_args"), reg("unev"))),
-      go_to(label("ev_appl_operand_loop")),
-      
-      "ev_appl_last_arg",
-      assign("continue", label("ev_appl_accum_last_arg")),
-      go_to(label("eval_dispatch")),
-      
-      "ev_appl_accum_last_arg",
-      restore("argl"),
-      assign("argl", list(op("adjoin_arg"), reg("val"), reg("argl"))),
-      restore("fun"),
-      go_to(label("apply_dispatch")),
-      
-      // function application needs to distinguish between
-      // primitive functions (which are evaluated using the
-      // underlying JavaScript), and compound functions.
-      // An application of the latter needs to evaluate the
-      // body of the function value with respect to an
-      // environment that results from extending the function
-      // object`s environment by a binding of the function
-      // parameters to the arguments and of local names to
-      // the special value no_value_yet
-      
-      // function apply(fun, args) {
-      //   if (is_primitive_function(fun)) {
-      //     return apply_primitive_function(fun, args);
-      //   } else if (is_compound_function(fun)) {
-      //     const body = function_body(fun);
-      //     const locals = local_names(body);
-      //     const names = insert_all(function_parameters(fun), locals);
-      //     const temp_values = map((x) => no_value_yet, locals);
-      //     const values = append(args, temp_values);
-      //     const result = evaluate(
-      //       body,
-      //       extend_environment(names, values, function_environment(fun))
-      //     );
-      //     if (is_return_value(result)) {
-      //       return return_value_content(result);
-      //     } else {
-      //       return undefined;
-      //     }
-      //   } else {
-      //     error(fun, "Unknown function type in apply");
-      //   }
-      // }
-      "apply_dispatch",
-      test(list(op("is_primitive_function"), reg("fun"), constant(true))),
-      branch(label("primitive_apply")),
-      test(list(op("is_compound_function"), reg("fun"), constant(true))),
-      branch(label("compound_apply")),
-      go_to(label("unknown_procedure_type")),
+  <TEXT>
+    Finally, we can initialize the global environment and run the evaluator:
+    <SNIPPET>
+      <NAME>ec_eval_all</NAME>
+      <REQUIRES>eceval</REQUIRES>
+      <SCHEME>
+      (define the-global-environment (setup-environment))
 
-      "primitive_apply",
-      assign("val", list(op("apply_primitive_function"), 
-                         reg("fun"), 
-                         reg("argl"))),
-      // go_to(label("return_from_apply")),
-      restore("continue"),
-      go_to(reg("continue")),
-      
-        "compound_apply",
-          assign("unev", list(op("function_parameters"), reg("fun"))), // params
-          assign("env", list(op("function_environment"), reg("fun"))),
-          assign("env", list(op("extend_environment"), 
-                             reg("unev"), 
-                             reg("argl"), 
-                             reg("env"))),
-          assign("unev", list(op("function_body"), reg("fun"))),
-          assign("continue", label("after_apply")),
-          save("continue"),
-          assign("retval", constant(no_value_yet)),
-          go_to(label("ev_sequence")),
-    
-        "install_return_value",
-          assign("val", reg("retval")),
-          assign("retval", constant(undefined)),
-          restore("continue"),
-          go_to(reg("continue")),
-            
-        "after_apply",
-          test(list(op("returned_value"), reg("retval"), constant(true))),
-          branch(label("defined_return_value")),
-  
-          assign("val", constant(undefined)),
-  
-        "defined_return_value",
-          assign("retval", constant(undefined)),
-          restore("continue"),
-          go_to(reg("continue")),
-            
-      // to evaluate a sequence, we need to evaluate
-      // its statements one after the other, and return
-      // the value of the last statement.
-      // An exception to this rule is when a return
-      // statement is encountered. In that case, the
-      // remaining statements are ignored and the
-      // return value is the value of the sequence.
-      
-      // function eval_sequence(stmts, env) {
-      //   if (is_empty_sequence(stmts)) {
-      //     return undefined;
-      //   } else if (is_last_statement(stmts)) {
-      //     return evaluate(first_statement(stmts), env);
-      //   } else {
-      //     const first_stmt_value = evaluate(first_statement(stmts), env);
-      //     if (is_return_value(first_stmt_value)) {
-      //       return first_stmt_value;
-      //     } else {
-      //       return eval_sequence(rest_statements(stmts), env);
-      //     }
-      //   }
-      // }
-      "ev_seq",
-      save("continue"),
-      assign("unev", list(op("sequence_statements"), reg("exp"))),
-      
-      "ev_sequence",
-      assign("exp", list(op("first_statement"), reg("unev"))),
-      test(list(op("is_last_statement"), reg("unev"), constant(true))),
-      branch(label("ev_sequence_last_exp")),
-      save("unev"),
-      save("env"),
-      assign("continue", label("ev_sequence_continue")),
-      go_to(label("eval_dispatch")),
-      
-      "ev_sequence_continue",
-      restore("env"),
-      restore("unev"),
-      assign("unev", list(op("rest_statements"), reg("unev"))),
-      go_to(label("ev_sequence")),
-      
-      "ev_sequence_last_exp",
-      restore("continue"),
-      go_to(label("eval_dispatch")),
-      
-      // evaluation of blocks evaluates the body of the block
-      // with respect to the current environment extended by
-      // a binding of all local names to the special value
-      // no_value_yet
-      
-      // function eval_block(stmt, env) {
-      //   const body = block_body(stmt);
-      //   const locals = local_names(body);
-      //   const temp_values = map((x) => no_value_yet, locals);
-      //   return evaluate(body, extend_environment(locals, temp_values, env));
-      // }
-      "ev_block",
-      save("continue"),
-      assign("exp", list(op("block_body"), reg("exp"))),
-      assign("val", list(op("local_names"), reg("exp"))),
-
-      save("exp"), // Temporarily store to exp
-      assign("exp", list(op("get_temp_block_values"), reg("val"))),
-      assign("env", list(op("extend_environment"), 
-                         reg("val"), 
-                         reg("exp"), 
-                         reg("env"))),
-      restore("exp"),
-      go_to(label("eval_dispatch")),
-      
-      // the meta-circular evaluation of conditional expressions
-      // evaluates the predicate and then the appropriate
-      // branch, depending on whether the predicate evaluates to
-      // true or not
-      
-      // function eval_conditional_expression(stmt, env) {
-      //   return is_true(evaluate(cond_expr_pred(stmt), env))
-      //     ? evaluate(cond_expr_cons(stmt), env)
-      //     : evaluate(cond_expr_alt(stmt), env);
-      // }
-      "ev_if",
-      save("exp"), // save expression for later
-      save("env"),
-      save("continue"),
-      assign("continue", label("ev_if_decide")),
-      assign("exp", list(op("conditional_pred"), reg("exp"))),
-      go_to(label("eval_dispatch")), // evaluate the predicate
-      
-      "ev_if_decide",
-      restore("continue"),
-      restore("env"),
-      restore("exp"),
-      test(list(op("is_true"), reg("val"), constant(true))),
-      branch(label("ev_if_consequent")),
-      
-      "ev_if_alternative",
-      assign("exp", list(op("conditional_alt"), reg("exp"))),
-      go_to(label("eval_dispatch")),
-      
-      "ev_if_consequent",
-      assign("exp", list(op("conditional_cons"), reg("exp"))),
-      go_to(label("eval_dispatch")),
-      
-      // function eval_assignment(stmt, env) {
-      //   const value = evaluate(assignment_value(stmt), env);
-      //   assign_symbol_value(assignment_symbol(stmt), value, env);
-      //   return value;
-      // }
-      "ev_assignment",
-      assign("unev", list(op("assignment_symbol"), reg("exp"))),
-      save("unev"), // save variable for later
-      assign("exp", list(op("assignment_value"), reg("exp"))),
-      save("env"),
-      save("continue"),
-      assign("continue", label("ev_assignment_1")),
-      go_to(label("eval_dispatch")), // evaluate the assignment value
-      
-      "ev_assignment_1",
-      restore("continue"),
-      restore("env"),
-      restore("unev"),
-      perform(
-      list(op("assign_symbol_value"), reg("unev"), reg("val"), reg("env"))
-      ),
-      assign("val", constant("ok")),
-      go_to(reg("continue")),
-      
-      // evaluation of a constant declaration evaluates
-      // the right-hand expression and binds the
-      // name to the resulting value in the
-      // first (innermost) frame
-      
-      // function eval_constant_declaration(stmt, env) {
-      //   assign_symbol_value(
-      //     constant_declaration_symbol(stmt),
-      //     evaluate(constant_declaration_value(stmt), env),
-      //     env
-      //   );
-      // }
-      "ev_variable_declaration",
-      assign("unev", list(op("variable_declaration_symbol"), reg("exp"))),
-      save("unev"), // save variable for later
-      assign("exp", list(op("variable_declaration_value"), reg("exp"))),
-      save("env"),
-      save("continue"),
-      assign("continue", label("ev_variable_declaration_1")),
-      go_to(label("eval_dispatch")), // evaluate the declaration value
-      
-      "ev_variable_declaration_1",
-      restore("continue"),
-      restore("env"),
-      restore("unev"),
-      perform(list(op("declare_value"), reg("unev"), reg("val"), reg("env"))),
-      assign("val", constant("ok")),
-      go_to(reg("continue")),
-      
-      "ev_constant_declaration",
-      assign("unev", list(op("constant_declaration_symbol"), reg("exp"))),
-      save("unev"), // save constant for later
-      assign("exp", list(op("constant_declaration_value"), reg("exp"))),
-      save("env"),
-      save("continue"),
-      assign("continue", label("ev_constant_declaration_1")),
-      go_to(label("eval_dispatch")), // evaluate the declaration value
-      
-      "ev_constant_declaration_1",
-      restore("continue"),
-      restore("env"),
-      restore("unev"),
-      perform(list(op("declare_value"), reg("unev"), reg("val"), reg("env"))),
-      assign("val", constant("ok")),
-      go_to(reg("continue")),
-      
-      // Error handling
-      "unknown_expression_type",
-      assign("val", constant("unknown_expression_type_error")),
-      assign("val", reg("exp")),
-      go_to(label("signal_error")),
-      
-      "unknown_procedure_type",
-      restore("continue"), /// clean up stack (from apply_dispatch)
-      assign("val", constant("unknown_procedure_type_error")),
-      go_to(label("signal_error")),
-      
-      "signal_error",
-      perform(list(op("user_print"), constant("EC_eval error:"), reg("val"))),
-      go_to(label("evaluator_done")),
-      
-      "read_eval_print_loop",
-      assign("exp", list(op("prompt_for_input"), constant("/// EC_Eval input:"))),
-      assign("continue", label("print_result")),
-      go_to(label("eval_dispatch")),
-      "print_result",
-      
-      perform(list(op("user_print"), constant("EC-evaluate value:"), reg("val"))),
-      //go_to(label("read_eval_print_loop")), /// Comment out to avoid infinite loop
-      
-      "evaluator_done"
-      )
-  );
-}
-
-const program = "           \
-function test1() {          \
-    display('A', 1);        \
-    const result = test2(); \
-    return display(result, 3);     \
-    display('X', 7);        \
-}                           \
-function test2() {          \
-    display('B', 2);        \
-    return 'C';             \
-    display('X', 4);        \
-}                           \
-function test3() {          \
-    display('hej!');        \
-}                           \
-function test4() {          \
-    return display('hej!');        \
-}                           \
-display(test1(), 5);        \
-display(test3(), 6);        \
-display(test4(), 8);";
-
-function prompt_for_input(p) {
-    const x = make_block(parse(program));
-    return x;
-}
-// function prompt_for_input(p) {
-//     const program_block = make_block(parse("function plus(a,b) { return a > 0 ? plus(a-1,b+1) : a + b; } plus(2,3);"));//prompt(p)));
-//     const program_block2 = make_block(parse("2+3;"));//prompt(p)));
-//     return program_block;
-// }
-
-const m = eceval();
-set_register_contents(m, "exp", "1;");
-
-start(m);
-get_register_contents(m, "val");
-
-</JAVASCRIPT_RUN>
-      <JAVASCRIPT>
-const the_global_environment = setup_environment();
-
-start(eceval);
-      </JAVASCRIPT>
-      <JAVASCRIPT_OUTPUT>
+      (start eceval)
+      </SCHEME>
+      <SCHEMEOUTPUT>
 ;;; EC-Eval input:
-function plus(a, b) {
-    return a + b;
-}
+(define (append x y)
+(if (null? x)
+y
+(cons (car x)
+    (append (cdr x) y))))
 ;;; EC-Eval value:
 ok
 
 ;;; EC-Eval input:
-plus(40, 2);
+(append '(a b c) '(d e f))
 ;;; EC-Eval value:
+(a b c d e f)
+      </SCHEMEOUTPUT>
+      <JAVASCRIPT_RUN>
+const test_program_1 = "                       \
+function test1() {                             \
+    display('A', 1);                           \
+    const result = test2();                    \
+    return display(result, 3);                 \
+    display('I should not be printed', 7);     \
+}                                              \
+function test2() {                             \
+    display('B', 2);                           \
+    return 'C';                                \
+    display('I should not be printed', 4);     \
+}                                              \
+function test3() {                             \
+    display('Hello from test3');               \
+}                                              \
+function test4() {                             \
+    return display('Hello from test4');        \
+}                                              \
+display(test1(), 5);                           \
+display(test3(), 6); // Should print undefined \
+display(test4(), 8);                           \
+";
+
+const test_program_2 = "           \
+function adder(a, b) {             \
+    return                         \
+        a === 0                    \
+      ? b                          \
+      : adder(a - 1, b + 1);       \
+ 42;                               \
+}                                  \
+display(adder(7, 5), \"7 + 5 =\"); \
+";
+
+function prompt_for_input(p) {
+    return make_block(parse(prompt(p)));
+    // To avoid having to paste programs:
+    //  return make_block(parse(test_program_1));
+    //  return make_block(parse(test_program_2));
+}
+
+start(eceval);
+get_register_contents(eceval, "val");
+</JAVASCRIPT_RUN>
+      <JAVASCRIPT>
+const the_global_environment = setup_environment();
+start(eceval);
+      </JAVASCRIPT>
+      <JAVASCRIPT_OUTPUT>
+EC-evaluate input:
+function plus(a, b) {
+    return a === 0 ? b : plus(a - 1, b + 1);
+}
+EC-evaluate value:
+ok
+
+EC-evaluate input:
+plus(2, 40);
+EC-evaluate value:
 42
       </JAVASCRIPT_OUTPUT>
     </SNIPPET>
@@ -1007,10 +821,11 @@ plus(40, 2);
 
   <TEXT>
     Of course, evaluating expressions in this way will take much longer
-    than if we had directly typed them into Scheme, because of the
+    than if we had directly typed them into <SPLITINLINE><SCHEME>Scheme</SCHEME><JAVASCRIPT>JavaScript</JAVASCRIPT></SPLITINLINE>, because of the
     multiple levels of simulation involved.  Our expressions are evaluated
     by the explicit-control-evaluator machine, which is being simulated by
-    a Scheme program, which is itself being evaluated by the Scheme
+    a <SPLITINLINE><SCHEME>Scheme</SCHEME><JAVASCRIPT>JavaScript</JAVASCRIPT></SPLITINLINE> program, which is itself being evaluated by the
+    <SPLITINLINE><SCHEME>Scheme</SCHEME><JAVASCRIPT>JavaScript</JAVASCRIPT></SPLITINLINE>
     interpreter.
     <INDEX>explicit-control evaluator for Scheme
     <SUBINDEX>running|)</SUBINDEX></INDEX>
@@ -1046,13 +861,13 @@ plus(40, 2);
       print-result
       (perform (op print-stack-statistics))<EM>; added instruction</EM>
       (perform
-      (op announce-output) (const ";;; EC-Eval value:"))
+      (op announce-output) (const "EC-Eval value:"))
       ^$\ldots$^ ; same as before
       </SCHEME>
       <JAVASCRIPT>
 "print_result",
     perform(op("print_stack_statistics")), // added instruction
-    perform(op("announce_output"), constant("/// EC-Eval value:")),
+    perform(op("announce_output"), constant("EC-evaluate value:")),
     $\ldots$  // same as before
       </JAVASCRIPT>
     </SNIPPET>
@@ -1078,19 +893,32 @@ ok
 120
       </SCHEMEOUTPUT>
       <JAVASCRIPT_OUTPUT>
-/// EC-Eval input:
+EC-evaluate input:
+      </JAVASCRIPT_OUTPUT>
+    </SNIPPET>
+    <SNIPPET EVAL="no">
+      <JAVASCRIPT>
 function factorial (n) {
-return n === 1 ?
-1
-n * factorial(n - 1); }
+    return n === 1
+        ? 1
+        : n * factorial(n - 1); 
+}
+      </JAVASCRIPT>
+      <JAVASCRIPT_OUTPUT>
 (total-pushes = 3 maximum-depth = 3)
-/// EC-Eval value:
-ok
+EC-evaluate value:
+undefined
 
-/// EC-Eval input:
+EC-evaluate input:
+      </JAVASCRIPT_OUTPUT>
+    </SNIPPET>
+    <SNIPPET EVAL="no">
+      <JAVASCRIPT>      
 factorial(5);
+      </JAVASCRIPT>
+      <JAVASCRIPT_OUTPUT>
 (total-pushes = 144 maximum-depth = 28)
-/// EC-Eval value:
+EC-evaluate value:
 120
       </JAVASCRIPT_OUTPUT>
     </SNIPPET>
@@ -1297,9 +1125,11 @@ function fib(n) {
     </SPLITINLINE>
     types.  Other errors will take us out of the evaluator read-eval-print loop.
     When we run the evaluator using the register-machine simulator, these
-    errors are caught by the underlying Scheme system.  This is analogous
+    errors are caught by the underlying <SPLITINLINE><SCHEME>Scheme</SCHEME><JAVASCRIPT>JavaScript</JAVASCRIPT></SPLITINLINE> system.  This is analogous
     to the computer crashing when a user program makes an
-    error.<FOOTNOTE>Regrettably, this is the normal state of affairs in
+    <SPLITINLINE>
+      <SCHEME>
+        <FOOTNOTE>Regrettably, this is the normal state of affairs in
     <INDEX>C<SUBINDEX>error handling</SUBINDEX></INDEX>
     conventional compiler-based language systems such as C.  
     <INDEX>UNIX</INDEX>
@@ -1310,15 +1140,36 @@ function fib(n) {
     it becomes catatonic. The
     Macintosh<LATEXINLINE>$^{\textrm{TM}}$</LATEXINLINE> displays a picture of
     an exploding bomb and offers you the opportunity to reboot the
-    computer<EMDASH/>if you<APOS/>re lucky.</FOOTNOTE>  It is a large project to
+    computer<EMDASH/>if you<APOS/>re lucky.</FOOTNOTE>
+      </SCHEME>
+      <JAVASCRIPT>
+        <FOOTNOTE>This manifests itself as, for example, a
+        <QUOTE>kernel panic</QUOTE> or a <QUOTE>blue screen of
+        death</QUOTE> or a spurious reboot, typically on phones
+        and tablets. Most modern operating systems do a decent job
+        of preventing user programs from causing an entire machine
+        to crash.</FOOTNOTE>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    error.  It is a large project to
     make a real error system work, but it is well worth the effort to understand
     what is involved here.
     <OL>
       <LI>
 	Errors that occur in the evaluation process, such as an attempt to
-	access an unbound variable, could be caught by changing the lookup
+	access an unbound
+	<SPLITINLINE>
+	  <SCHEME>variable,</SCHEME>
+	  <JAVASCRIPT>name,</JAVASCRIPT>
+	</SPLITINLINE>
+	could be caught by changing the lookup
 	operation to make it return a distinguished condition code, which cannot
-	be a possible value of any user variable.  The evaluator can test
+	be a possible value of any user
+	<SPLITINLINE>
+	  <SCHEME>variable.</SCHEME>
+	  <JAVASCRIPT>name.</JAVASCRIPT>
+	</SPLITINLINE>
+	The evaluator can test
 	for this condition code and then do what is necessary to go to
 	<SPLITINLINE>
 	  <SCHEME><SCHEMEINLINE>signal-error</SCHEMEINLINE>.</SCHEME>

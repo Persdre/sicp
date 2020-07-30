@@ -382,7 +382,7 @@ accumulate((x, y) => x + y, 0, filter(is_odd, enumerate_interval(0, n)))
     accomplished, we install the new pointer as the new
     <SCHEMEINLINE>root</SCHEMEINLINE> and enter the main loop of the garbage
     collector.
-    <SNIPPET>
+    <SNIPPET EVAL="no">
       <NAME>begin_garbage_collection</NAME>
       <SCHEME>
 begin-garbage-collection
@@ -443,7 +443,7 @@ reassign-root
       <JAVASCRIPT><JAVASCRIPTINLINE>head</JAVASCRIPTINLINE></JAVASCRIPT>
     </SPLITINLINE>
     pointer.
-    <SNIPPET>
+    <SNIPPET EVAL="no">
       <NAME>gc_loop</NAME>
       <SCHEME>
 gc-loop
@@ -492,7 +492,7 @@ gc-loop
       <JAVASCRIPT><JAVASCRIPTINLINE>tail</JAVASCRIPTINLINE>,</JAVASCRIPT>
     </SPLITINLINE>
     we are finished scanning that pair, so we continue with the main loop.
-    <SNIPPET>
+    <SNIPPET EVAL="no">
       <NAME>update_head</NAME>
       <SCHEME>
 update-car
@@ -618,7 +618,16 @@ update-cdr
     operation because in a real system there might be various things
     that are treated as pairs for garbage-collection purposes.
     For example, in a Scheme system that conforms to the 
-    IEEE standard a procedure object may be implemented as a special kind of
+    IEEE standard a
+    <SPLITINLINE>
+      <SCHEME>
+	procedure
+      </SCHEME>
+      <JAVASCRIPT>
+	function
+      </JAVASCRIPT>
+    </SPLITINLINE>
+    object may be implemented as a special kind of
     <QUOTE>pair</QUOTE> that doesn<APOS/>t satisfy the
     <SPLITINLINE>
       <SCHEME><SCHEMEINLINE>pair?</SCHEMEINLINE></SCHEME>
@@ -637,7 +646,7 @@ update-cdr
       <JAVASCRIPT><JAVASCRIPTINLINE>is_pair</JAVASCRIPTINLINE>.</JAVASCRIPT>
     </SPLITINLINE></FOOTNOTE>
 
-    <SNIPPET>
+    <SNIPPET EVAL="no">
       <NAME>relocate_old_result_in_new</NAME>
       <SCHEME>
 relocate-old-result-in-new
@@ -986,7 +995,7 @@ function make_new_machine() {
         list("env", env),
         list("val", make_register("val")),
         list("continue", make_register("continue")),
-        list("proc", make_register("proc")),
+        list("fun", make_register("fun")),
         list("argl", make_register("argl")),
         list("unev", make_register("unev")),
         list("fun", make_register("fun"))
@@ -1110,7 +1119,7 @@ function make_new_machine() {
         if (is_null(insts)) {
             return "done";
         } else {
-            const proc = instruction_execution_proc(head(insts));
+            const proc = instruction_execution_fun(head(insts));
             proc(); 
             return execute();
         }
@@ -1194,7 +1203,7 @@ function update_insts(insts, labels, machine) {
     const stack = machine("stack");
     const ops = machine("operations");
 
-    const set_iep = set_instruction_execution_proc;
+    const set_iep = set_instruction_execution_fun;
     const make_ep = make_execution_function;
     return map(i => set_iep(i,
                             make_ep(instruction_text(i),
@@ -1215,11 +1224,11 @@ function instruction_text(inst) {
     return head(inst);
 }
 
-function instruction_execution_proc(inst) {
+function instruction_execution_fun(inst) {
     return tail(inst);
 }
 
-function set_instruction_execution_proc(inst, proc) {
+function set_instruction_execution_fun(inst, proc) {
     set_tail(inst, proc); 
 }
 

@@ -31,8 +31,16 @@
       </JAVASCRIPTINLINE></JAVASCRIPT>
     </SPLITINLINE>
     is
-    <INDEX>recursive procedure
-    <SUBINDEX>recursive procedure definition</SUBINDEX></INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>recursive procedure
+	<SUBINDEX>recursive procedure definition</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>recursive function
+	<SUBINDEX>recursive function declaration</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
     <EM>recursive</EM>; that is, the
     <SPLITINLINE>
       <SCHEME>
@@ -122,8 +130,15 @@
     <SPLITINLINE>
       <SCHEME>procedures.</SCHEME>
       <JAVASCRIPT>functions.</JAVASCRIPT>
-      </SPLITINLINE>
-    <INDEX>procedure<SUBINDEX>black@as black box|(</SUBINDEX></INDEX>
+    </SPLITINLINE>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>procedure<SUBINDEX>black@as black box|(</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>function<SUBINDEX>black@as black box|(</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
     For example, when we define the	      
     <SPLITINLINE>
       <SCHEME>
@@ -298,7 +313,14 @@ function double(x) {
       </JAVASCRIPT>
     </SPLITINLINE>
     is implemented in order to use it.
-    <INDEX>procedure<SUBINDEX>black@as black box|)</SUBINDEX></INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>procedure<SUBINDEX>black@as black box|)</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>function<SUBINDEX>black@as black box|)</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
   </TEXT>
 
   <SUBHEADING>
@@ -550,8 +572,16 @@ function good_enough(guess, x) {
       </JAVASCRIPT>
     </SPLITINLINE>
     parameter has.  Such a name is called
-    <INDEX>bound variable</INDEX>
-    <INDEX>variable<SUBINDEX>bound</SUBINDEX></INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>bound variable</INDEX>
+	<INDEX>variable<SUBINDEX>bound</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>bound name</INDEX>
+	<INDEX>name<SUBINDEX>bound</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
     <SPLITINLINE>
       <SCHEME>
 	a <EM>bound variable</EM>, and we say that the procedure definition
@@ -590,15 +620,30 @@ function good_enough(guess, x) {
       <JAVASCRIPT>name</JAVASCRIPT>
     </SPLITINLINE>
     is not bound, we say that it is
-    <INDEX>free variable</INDEX><INDEX>variable<SUBINDEX>free</SUBINDEX></INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>free variable</INDEX><INDEX>variable<SUBINDEX>free</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>free name</INDEX><INDEX>name<SUBINDEX>free</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
     <EM>free</EM>.  The set of expressions for which a binding
     <SPLITINLINE>
       <SCHEME>defines</SCHEME>
       <JAVASCRIPT>declares</JAVASCRIPT>
     </SPLITINLINE>
     a name is called the
-    <INDEX>scope of a variable</INDEX>
-    <INDEX>variable<SUBINDEX>scope of</SUBINDEX></INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>scope of a variable</INDEX>
+	<INDEX>variable<SUBINDEX>scope of</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>scope of a name</INDEX>
+	<INDEX>name<SUBINDEX>scope of</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
     <EM>scope</EM> of that name. In a
     <SPLITINLINE>
       <SCHEME>
@@ -609,10 +654,20 @@ function good_enough(guess, x) {
       </JAVASCRIPT>
     </SPLITINLINE>
     declared as the
-    <INDEX>formal parameters<SUBINDEX>scope of</SUBINDEX></INDEX>
-    <INDEX>procedure<SUBINDEX>scope of formal parameters</SUBINDEX></INDEX>
-    <INDEX>scope of a variable
-    <SUBINDEX>procedure<APOS/>s formal parameters</SUBINDEX></INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>formal parameters<SUBINDEX>scope of</SUBINDEX></INDEX>
+	<INDEX>procedure<SUBINDEX>scope of formal parameters</SUBINDEX></INDEX>
+	<INDEX>scope of a variable
+	<SUBINDEX>procedure<APOS/>s formal parameters</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>parameters<SUBINDEX>scope of</SUBINDEX></INDEX>
+	<INDEX>function<SUBINDEX>scope of parameters</SUBINDEX></INDEX>
+	<INDEX>scope of a name
+	<SUBINDEX>function<APOS/>s parameters</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
     <SPLITINLINE>
       <SCHEME>
         formal parameters of the procedure
@@ -686,9 +741,18 @@ function good_enough(guess, x) {
     and <SCHEMEINLINE>square</SCHEMEINLINE>.  (If we renamed
     <SCHEMEINLINE>guess</SCHEMEINLINE> to
     <SCHEMEINLINE>abs</SCHEMEINLINE> we would have introduced a bug by
-    <INDEX>capturing a free variable</INDEX>
-    <INDEX>bug<SUBINDEX>capturing a free variable</SUBINDEX></INDEX>
-    <INDEX>free variable<SUBINDEX>capturing</SUBINDEX></INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>capturing a free variable</INDEX>
+	<INDEX>bug<SUBINDEX>capturing a free variable</SUBINDEX></INDEX>
+	<INDEX>free variable<SUBINDEX>capturing</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>capturing a free name</INDEX>
+	<INDEX>bug<SUBINDEX>capturing a free name</SUBINDEX></INDEX>
+	<INDEX>free name<SUBINDEX>capturing</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
     <EM>capturing</EM> the
     <SPLITINLINE>
       <SCHEME>
@@ -947,7 +1011,14 @@ function improve(guess, x) {
     </SPLITINLINE>
     to have
     <INDEX>block structure|(</INDEX>
-    <INDEX>internal definition|(</INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>internal definition|(</INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>internal declaration|(</INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
     internal declarations that are local to that
     <SPLITINLINE>
       <SCHEME>procedure.</SCHEME>
@@ -991,6 +1062,13 @@ function sqrt(x) {
     </SNIPPET>
   </TEXT>
   <TEXT>
+    <SPLITINLINE>
+      <SCHEME></SCHEME>
+      <JAVASCRIPT>
+	Any matching pair of curly braces designates a <EM>block</EM>, and
+	declarations inside the block are local to the block.
+      </JAVASCRIPT>
+    </SPLITINLINE>
     Such nesting of
     <SPLITINLINE>
       <SCHEME>definitions,</SCHEME>
@@ -1036,10 +1114,19 @@ function sqrt(x) {
       <JAVASCRIPT>functions.</JAVASCRIPT>
     </SPLITINLINE>
     Instead, we allow <SCHEMEINLINE>x</SCHEMEINLINE> to be a free
-    <INDEX>internal definition<SUBINDEX>free variable in</SUBINDEX></INDEX>
-    <INDEX>free variable
-    <SUBINDEX>internal@in internal definition</SUBINDEX></INDEX>
     <SPLITINLINE>
+      <SCHEME>
+	<INDEX>internal definition<SUBINDEX>free variable in</SUBINDEX></INDEX>
+	<INDEX>free variable
+	<SUBINDEX>internal@in internal definition</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>internal declaration<SUBINDEX>free name in</SUBINDEX></INDEX>
+	<INDEX>free name
+	<SUBINDEX>internal@in internal declaration</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
+      <SPLITINLINE>
       <SCHEME>variable</SCHEME>
       <JAVASCRIPT>name</JAVASCRIPT>
     </SPLITINLINE>
@@ -1139,20 +1226,37 @@ function sqrt(x) {
       </JAVASCRIPT>
     </SPLITINLINE>
     body.
-    <INDEX>internal definition<SUBINDEX>position of</SUBINDEX></INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>internal definition<SUBINDEX>position of</SUBINDEX></INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>internal declaration<SUBINDEX>position of</SUBINDEX></INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
     The management is not responsible for the consequences of running programs
     that intertwine
     <SPLITINLINE>
       <SCHEME>definition</SCHEME>
       <JAVASCRIPT>declaration</JAVASCRIPT>
     </SPLITINLINE>
-    and use.<LABEL NAME="foot:management"/></FOOTNOTE>
+    and use; see also
+    footnote<SPACE/><REF NAME="foot:function-decl-vs-lambda"/> in 
+    section<SPACE/><REF NAME="sec:lambda"/>.
+    <LABEL NAME="foot:management"/></FOOTNOTE>
     The idea of block structure originated with the programming language
     <INDEX>Algol<SUBINDEX>block structure</SUBINDEX></INDEX>
     Algol<SPACE/>60. It appears in most advanced programming languages and is an
     important tool for helping to organize the construction of large programs. 
     <INDEX>program<SUBINDEX>structure@structure of|)</SUBINDEX></INDEX>
     <INDEX>block structure|)</INDEX>
-    <INDEX>internal definition|)</INDEX>
+    <SPLITINLINE>
+      <SCHEME>
+	<INDEX>internal definition|)</INDEX>
+      </SCHEME>
+      <JAVASCRIPT>
+	<INDEX>internal declaration|)</INDEX>
+      </JAVASCRIPT>
+    </SPLITINLINE>
   </TEXT>
 </SUBSECTION>
