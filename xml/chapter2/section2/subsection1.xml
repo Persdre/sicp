@@ -224,6 +224,7 @@ tail(one_through_four);
       </TEXT>
     </SCHEME>
     <JAVASCRIPT>
+      <TEXT>
       Box notation is sometimes difficult to read. When we want to
       indicate the list nature of a data structure, we shall often employ the
       alternative <EM>list notation</EM>, using the
@@ -233,6 +234,7 @@ tail(one_through_four);
       <JAVASCRIPTINLINE>[1, [2, [[3, [4, null]], [5, null]]]]</JAVASCRIPTINLINE>
       we can write <JAVASCRIPTINLINE>list(1, 2, list(3, 4), 5)</JAVASCRIPTINLINE>
       in list notation.
+      </TEXT>
     </JAVASCRIPT>
   </SPLIT>
   <TEXT>
@@ -1675,7 +1677,7 @@ tail(square_list(list(1, 2, 3, 4)));
       <JAVASCRIPT><JAVASCRIPTINLINE>square_list</JAVASCRIPTINLINE>.</JAVASCRIPT>
     </SPLITINLINE>
     Complete both of them by filling in the missing expressions:
-    <SNIPPET>
+    <SNIPPET LATEX="yes">
       <EXAMPLE>square_list_example</EXAMPLE>
       <SCHEME>
 (define (square-list items)
@@ -1687,11 +1689,11 @@ tail(square_list(list(1, 2, 3, 4)));
 function square_list(items) {
     return is_null(items) 
            ? null
-           : pair(??, ??);
+           : pair($\langle ??\rangle$, $\langle ??\rangle$);
 }
       </JAVASCRIPT>
     </SNIPPET>
-    <SNIPPET>
+    <SNIPPET LATEX="yes">
       <EXAMPLE>square_list_example</EXAMPLE>
       <SCHEME>
 (define (square-list items)
@@ -1699,7 +1701,7 @@ function square_list(items) {
       </SCHEME>
       <JAVASCRIPT>
 function square_list(items) {
-   return map(??, ??);
+   return map($\langle ??\rangle$, $\langle ??\rangle$);
 }
       </JAVASCRIPT>
     </SNIPPET>

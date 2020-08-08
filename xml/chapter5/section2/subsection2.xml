@@ -180,8 +180,6 @@ return extract_labels(controller_text,
     label from <SCHEMEINLINE>text</SCHEMEINLINE> with the position in the list
     <SCHEMEINLINE>insts</SCHEMEINLINE> that the label designates.
     <!--  \indcode*{extract-labels} -->
-    <!-- FIXME: why is JavaScript version so different
-                from the Scheme version?              -->
     <SNIPPET>
       <NAME>extract_labels</NAME>
       <REQUIRES>make_label_entry</REQUIRES>
@@ -204,16 +202,22 @@ return extract_labels(controller_text,
       </SCHEME>
       <JAVASCRIPT>
 function extract_labels(text, receive) {
-    function helper(insts, labels) { 
-        const next_inst = head(text);
-        return is_string(next_inst)
-            ? receive(insts, pair(make_label_entry(next_inst, insts),
-                                  labels))
-            : receive(pair(make_instruction(next_inst), insts), labels);
+    if (is_null(text)) {
+        return receive(null, null);
+    } else {
+        return extract_labels(tail(text), 
+            (insts, labels) => {
+                const next_inst = head(text);
+                return is_string(next_inst)
+                    ? receive(insts, 
+                          pair(make_label_entry(next_inst, 
+                                                insts), 
+                               labels))
+                    : receive(pair(make_instruction(next_inst), 
+                                                    insts), 
+                                   labels); 
+            });
     }
-    return text === undefined || is_null(text)
-        ? receive(null, null)
-        : extract_labels(tail(text), helper);
 }
       </JAVASCRIPT>
     </SNIPPET>
@@ -346,8 +350,6 @@ function assemble(controller_text, machine) {
       <SCHEME>procedures:</SCHEME>
       <JAVASCRIPT>functions:</JAVASCRIPT>
     </SPLITINLINE>
-    <!-- FIXME: JavaScript is unnecessarily different from
-	 Scheme here: map should be for-each               -->
     <!--  \indcode*{update-insts!} -->
     <SNIPPET>
       <NAME>update_insts</NAME>
@@ -376,17 +378,18 @@ function update_insts(insts, labels, machine) {
     const flag = get_register(machine, "flag");
     const stack = machine("stack");
     const ops = machine("operations");
-    const set_iep = set_instruction_execution_fun;
-    const make_ep = make_execution_function;
-    return map(i => set_iep(i,
-                            make_ep(instruction_text(i),
-                                    labels,
-                                    machine,
-                                    pc,
-                                    flag,
-                                    stack,
-                                    ops)),
-               insts);
+    return for_each(
+        inst => set_instruction_execution_fun(
+            inst,
+            make_execution_function(
+                instruction_text(inst),
+                labels,
+                machine,
+                pc,
+                flag,
+                stack,
+                ops)),
+        insts);
 }
       </JAVASCRIPT>
     </SNIPPET>

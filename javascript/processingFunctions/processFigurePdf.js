@@ -42,6 +42,11 @@ export const processFigurePdf = (node, writeTo) => {
   if (label) {
     writeTo.push("\\label{" + label.getAttribute("NAME") + "}\n");
   }
+
+  if (node.getAttribute("CONTINUED").toLowerCase() === "yes") {
+    writeTo.push("\\addtocounter{figure}{-1}\n");
+  }
+
   writeTo.push("\\end{figure}\n");
 };
 

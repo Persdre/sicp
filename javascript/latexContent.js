@@ -4,17 +4,16 @@ const title = `\\begin{titlepage}
   \\centering
 \\textbf{Generated: \\DTMnow}\\\\[1em]
   \\includegraphics[width=0.6\\textwidth]{./sicp.png}\\par
-  {\\LARGE\\bfseries Structure and Interpretation of Computer\\\\
-  Programs — JavaScript Adaptation\\par}
+  {\\LARGE\\bfseries Structure and Interpretation of Computer
+  Programs, Second Edition\\\\}
+  {\\LARGE\\bfseries JavaScript Adaptation\\par}
   \\vspace{0.5cm}
   \\begin{flushright}
-  {\\Large Martin Henz and Tobias Wrigstad \\\\}
-  {\\large with Chan Ger Hean, He Xinyue, Liu Hang, \\\\ Feng Piaopiao, Jolyn Tan and Wang Qian \\\\
-   — \\textit{adapters to JavaScript}\\par}
-  \\vspace{0.5cm}
-  {\\large \\textit{original textbook by} \\\\}
   {\\Large Harold Abelson and Gerald Jay Sussman \\\\}
   {\\large with Julie Sussman \\par}
+  \\vspace{0.5cm}
+  {\\textit{adapted to JavaScript by}\\par}
+  {\\Large Martin Henz and Tobias Wrigstad \\\\}
   \\end{flushright}
 
   \\vspace{0.2cm}
@@ -70,10 +69,7 @@ export const preamble = `\\documentclass[a4paper, 12pt]{book}
 
 \\usepackage{titleps}
 \\newpagestyle{main}{
-  \\setheadrule{0pt}
-  \\sethead{\\chaptertitle}
-    {} 
-    {\\thechapter}
+  \\sethead{}{}{}
   \\setfoot{}{\\thepage}{\\footnotesize Generated \\DTMnow}
 }
 \\newpagestyle{section}{
@@ -150,8 +146,8 @@ export const preamble = `\\documentclass[a4paper, 12pt]{book}
    rulecolor=\\color{LeftBarClickable},
    escapechar=^
 }
-\\lstnewenvironment{JavaScript}{\\lstset{style=JavaScript}}{}
-\\lstnewenvironment{JavaScriptClickable}{\\lstset{style=JavaScript,frame=leftline,escapeinside={/*!}{!*/}}}{}
+\\lstnewenvironment{JavaScript}{\\lstset{style=JavaScript,aboveskip=1ex}}{}
+\\lstnewenvironment{JavaScriptClickable}{\\lstset{style=JavaScript,frame=leftline,aboveskip=1ex,escapeinside={/*!}{!*/}}}{}
 \\lstdefinestyle{JavaScriptOutput}{
    language=JavaScript,
    basicstyle=\\linespread{1.0}\\slshape,
@@ -166,7 +162,7 @@ export const preamble = `\\documentclass[a4paper, 12pt]{book}
    rulecolor=\\color{LeftBarClickable},
    escapechar=^
 }
-\\lstnewenvironment{JavaScriptOutput}{\\lstset{style=JavaScriptOutput}}{}
+\\lstnewenvironment{JavaScriptOutput}{\\lstset{style=JavaScriptOutput,aboveskip=1ex}}{}
 
 \\usepackage{epigraph}
 \\renewcommand{\\textflush}{flushepinormal}
